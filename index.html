@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#f4f4f5" />
+  <title>10공방</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="studio-header">
+    <div class="brand-title">
+      <svg class="brand-logo" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2"></polygon>
+        <polyline points="3 7 12 12 21 7"></polyline>
+        <line x1="12" y1="22" x2="12" y2="12"></line>
+      </svg>
+      <h1>10공방</h1>
+    </div>
+    <div class="header-controls">
+      <input type="file" id="inputCharacterFile" accept=".json,.zip,.glb" hidden />
+      <button type="button" id="btnImportCharacter" class="ctrl-btn" title="사이트에서 저장한 캐릭터 파일(.json, .zip, .glb) 불러오기">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span class="label-full">파일 불러오기</span>
+        <span class="label-short">불러오기</span>
+      </button>
+      <button type="button" id="btnExportJson" class="ctrl-btn" title="현재 캐릭터 커스텀 데이터(.json) 저장">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span class="label-full">프로젝트 저장</span>
+        <span class="label-short">저장</span>
+      </button>
+      <button type="button" id="btnToggleStudio" class="ctrl-btn studio-toggle-btn" title="다중 캐릭터 배치 및 모션 촬영 스튜디오 모드">
+        <span class="label-full">스튜디오 모드</span>
+        <span class="label-short">스튜디오</span>
+      </button>
+      <button type="button" id="btnRandom" class="ctrl-btn">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 3 21 3 21 8"></polyline>
+          <line x1="4" y1="20" x2="21" y2="3"></line>
+          <polyline points="21 16 21 21 16 21"></polyline>
+          <line x1="15" y1="15" x2="21" y2="21"></line>
+          <line x1="4" y1="4" x2="9" y2="9"></line>
+        </svg>
+        <span class="label-full">랜덤 조합</span>
+        <span class="label-short">랜덤</span>
+      </button>
+      <button type="button" id="btnResetCharacter" class="ctrl-btn">
+        <span>초기화</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="studio-workspace">
+    <!-- 좌측: 3D 뷰포트 & 다운로드 패널 -->
+    <section class="viewport-column">
+      <div class="viewport-box" id="canvasFrame">
+        <canvas id="stageCanvas" aria-label="3D 캐릭터 뷰포트"></canvas>
+
+        <!-- 스튜디오 모드 상태 배지 (활성 시 표시) -->
+        <div class="studio-stage-badge" id="studioStageBadge" hidden>
+          <span id="studioStageCountText">스튜디오 모드 (1명)</span>
+          <button type="button" id="btnExitStudioBadge" class="badge-close-btn" title="단일 편집 모드로 돌아가기">단일 모드로 전환</button>
+        </div>
+
+        <!-- 뷰포트 우측 상단 컨트롤 -->
+        <div class="viewport-toolbar">
+          <button type="button" id="btnCamReset" class="vp-btn" title="정면 카메라 정렬">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>정면</span>
+          </button>
+          <button type="button" id="btnQuickDance" class="vp-btn" title="모션 전환">
+            <span>모션 전환</span>
+          </button>
+          <button type="button" id="btnSnapPng" class="vp-btn" title="PNG 이미지 저장">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span>캡처</span>
+          </button>
+        </div>
+
+        <div class="viewport-hint">드래그: 회전 · 휠: 확대/축소 · 클릭: 탄성 반응 · 파일 드롭: 불러오기</div>
+
+        <div class="busy-overlay" id="busyOverlay" hidden>
+          <div class="busy-card">
+            <div class="spinner"></div>
+            <p id="busyText">처리 중…</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="export-actions">
+        <button type="button" id="btnExportPmx" class="export-card primary">
+          <div class="export-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </div>
+          <div class="export-info">
+            <strong>MMD 모델 다운로드 (.pmx)</strong>
+            <small>표준 본 · 다리 IK · 텍스처 · 재불러오기 지원 ZIP</small>
+          </div>
+        </button>
+
+        <button type="button" id="btnExportGlb" class="export-card secondary">
+          <div class="export-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+          <div class="export-info">
+            <strong>범용 3D 다운로드 (.glb)</strong>
+            <small>Blender · Unity 호환 및 사이트 재불러오기 지원</small>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- 우측: 파츠 및 모션 에디터 패널 -->
+    <main class="editor-column">
+      <div class="character-name-bar">
+        <label for="inputCharacterName" class="character-name-label">캐릭터 이름</label>
+        <input
+          type="text"
+          id="inputCharacterName"
+          class="character-name-input"
+          placeholder="이름 입력 (예: 복실이 — 저장 파일명 및 스튜디오에 반영)"
+          maxlength="36"
+          autocomplete="off"
+        />
+      </div>
+
+      <nav class="editor-nav" id="categoryTabs" aria-label="편집 카테고리">
+        <button type="button" class="nav-tab active" data-tab="tab-ears-tail">귀 · 꼬리</button>
+        <button type="button" class="nav-tab" data-tab="tab-face">눈 · 입</button>
+        <button type="button" class="nav-tab" data-tab="tab-colors">색상 · 무늬</button>
+        <button type="button" class="nav-tab" data-tab="tab-deco">홍조 · 점 · 장식</button>
+        <button type="button" class="nav-tab" data-tab="tab-style">체형 · 윤곽선</button>
+        <button type="button" class="nav-tab" data-tab="tab-dance">모션 · 녹화</button>
+        <button type="button" class="nav-tab" data-tab="tab-studio">스튜디오</button>
+      </nav>
+
+      <div class="editor-body">
+        <!-- 탭 1: 귀 (15종) & 꼬리 (5종) -->
+        <section class="tab-pane active" id="tab-ears-tail">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>귀 모양 <span class="count-tag">15</span></h2>
+              <span class="section-desc">동물별 귀 실루엣 선택</span>
+            </div>
+            <div class="thumb-grid" id="earGrid"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>꼬리 모양 <span class="count-tag">5</span></h2>
+              <span class="section-desc">동그란 · 긴 · 뭉툭한 · 복슬복슬 · 없음</span>
+            </div>
+            <div class="thumb-grid" id="tailGrid"></div>
+
+            <div class="option-bar" style="margin-top: 14px;">
+              <label class="check-label">
+                <input type="checkbox" id="chkTailTip" />
+                <span>꼬리 끝 / 줄무늬 포인트 색상 활성화</span>
+              </label>
+              <input type="color" id="colorTailTip" class="color-box" value="#27272a" title="꼬리 포인트 색상" />
+            </div>
+          </div>
+        </section>
+
+        <!-- 탭 2: 눈 (9종) + 속눈썹 + 입 (6종) -->
+        <section class="tab-pane" id="tab-face">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>눈 모양 <span class="count-tag">9</span></h2>
+              <span class="section-desc">기본 타원 · 진지 · 순둥 · 반감은 · 반짝이 등</span>
+            </div>
+            <div class="thumb-grid" id="eyeGrid"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>속눈썹 옵션</h2>
+              <span class="section-desc">위 속눈썹(1개) · 아래 속눈썹(2개) 조합</span>
+            </div>
+            <div class="chip-list" id="eyelashGrid"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>입 모양 <span class="count-tag">6</span></h2>
+              <span class="section-desc">코와 연결된 입 라인 선택</span>
+            </div>
+            <div class="thumb-grid" id="mouthGrid"></div>
+          </div>
+        </section>
+
+        <!-- 탭 3: 색상 & 무늬 -->
+        <section class="tab-pane" id="tab-colors">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>몸 기본 색상</h2>
+              <input type="color" id="pickerBodyColor" class="color-box" value="#ffffff" />
+            </div>
+            <div class="swatch-list" id="paletteBody"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>귀 안쪽 색상</h2>
+              <input type="color" id="pickerInnerEarColor" class="color-box" value="#ffb5c2" />
+            </div>
+            <div class="swatch-list" id="paletteInnerEar"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>눈 &amp; 코/입 색상</h2>
+              <div class="inline-pickers">
+                <label>눈 <input type="color" id="pickerEyeColor" class="color-box" value="#18181b" /></label>
+                <label>코/입 <input type="color" id="pickerNoseColor" class="color-box" value="#18181b" /></label>
+              </div>
+            </div>
+            <div class="swatch-list" id="paletteEye"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>얼굴 무늬 &amp; 부위별 색상</h2>
+              <input type="color" id="pickerPatternColor" class="color-box" value="#d4c4b4" title="무늬 색상" />
+            </div>
+            <div class="chip-list" id="patternGrid"></div>
+
+            <div class="option-bar" style="margin-top: 14px;">
+              <label class="check-label">
+                <input type="checkbox" id="chkBellyPatch" />
+                <span>몸통 배 부분 색상 구분</span>
+              </label>
+              <input type="color" id="pickerBellyColor" class="color-box" value="#fff5eb" />
+            </div>
+
+            <div class="option-bar" style="margin-top: 8px;">
+              <span>사슴 뿔 색상 (사슴 2 선택 시)</span>
+              <input type="color" id="pickerAntlerColor" class="color-box" value="#c69c6d" />
+            </div>
+          </div>
+        </section>
+
+        <!-- 탭 4: 홍조 · 점 · 장식 -->
+        <section class="tab-pane" id="tab-deco">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>만화 홍조 이펙트</h2>
+              <input type="color" id="pickerBlushColor" class="color-box" value="#ff8da1" />
+            </div>
+            <div class="chip-list" id="blushGrid"></div>
+
+            <div class="slider-group" style="margin-top: 14px;">
+              <div class="slider-item">
+                <label for="sliderBlushScale">홍조 크기</label>
+                <input type="range" id="sliderBlushScale" min="0.5" max="1.8" step="0.05" value="1.0" />
+                <span id="valBlushScale">1.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderBlushOpacity">홍조 농도</label>
+                <input type="range" id="sliderBlushOpacity" min="0.1" max="1.0" step="0.05" value="0.85" />
+                <span id="valBlushOpacity">85%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>점 (여러 개 추가 · 개별 커스텀)</h2>
+              <div class="mole-action-btns">
+                <button type="button" class="chip-btn" id="btnAddMole">점 추가</button>
+                <button type="button" class="chip-btn" id="btnAddTearMole">눈물점</button>
+                <button type="button" class="chip-btn" id="btnAddMouthMole">입가점</button>
+                <button type="button" class="chip-btn" id="btnClearMoles">전체 삭제</button>
+              </div>
+            </div>
+            <div id="moleListContainer" class="mole-list-container"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>흉터 (여러 개 추가 · 개별 커스텀)</h2>
+              <div class="inline-pickers">
+                <label>흉터 색상 <input type="color" id="pickerScarColor" class="color-box" value="#b55d60" /></label>
+              </div>
+            </div>
+            <div class="mole-action-btns" style="margin-bottom: 10px;">
+              <button type="button" class="chip-btn" id="btnAddSlashScar">일자 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddStitchScar">바늘땀 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddCrossScar">십자 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddDoubleScar">두 줄 흉터</button>
+              <button type="button" class="chip-btn" id="btnClearScars">전체 삭제</button>
+            </div>
+            <div id="scarListContainer" class="mole-list-container"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>리본 장식 <span class="count-tag">복수 선택 가능</span></h2>
+              <input type="color" id="pickerAccessoryColor" class="color-box" value="#ff5e7e" />
+            </div>
+            <div class="swatch-list" id="paletteAccessory" style="margin-bottom: 12px;"></div>
+            <div class="chip-list" id="ribbonGrid"></div>
+
+            <div class="slider-item" style="margin-top: 12px;">
+              <label for="sliderRibbonScale">리본 크기</label>
+              <input type="range" id="sliderRibbonScale" min="0.6" max="1.6" step="0.05" value="1.0" />
+              <span id="valRibbonScale">1.00</span>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>추가 소품 <span class="count-tag">복수 선택 가능</span></h2>
+              <span class="section-desc">안대 · 밴드 · 안경 · 모자 등을 동시에 착용할 수 있습니다</span>
+            </div>
+            <div class="chip-list" id="extraAccGrid"></div>
+          </div>
+        </section>
+
+        <!-- 탭 5: 체형 & 윤곽선 -->
+        <section class="tab-pane" id="tab-style">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>폴리곤 셰이딩 &amp; 외곽선</h2>
+            </div>
+            <div class="option-bar">
+              <label class="check-label">
+                <input type="checkbox" id="chkLowPolyFlat" />
+                <span>각진 폴리곤 면 표시 (Flat Facet 모드)</span>
+              </label>
+            </div>
+            <div class="chip-list" id="polyDetailGrid" style="margin-top: 10px;">
+              <button type="button" class="chip-btn" data-poly="very_low">로우 폴리곤</button>
+              <button type="button" class="chip-btn active" data-poly="low">표준 폴리곤</button>
+              <button type="button" class="chip-btn" data-poly="medium">하이 폴리곤</button>
+            </div>
+
+            <div class="option-bar" style="margin-top: 14px;">
+              <label class="check-label">
+                <input type="checkbox" id="chkOutline" checked />
+                <span>외곽선(잉크 라인) 표시</span>
+              </label>
+            </div>
+            <div class="slider-item" style="margin-top: 8px;">
+              <label for="sliderOutline">외곽선 두께</label>
+              <input type="range" id="sliderOutline" min="0.005" max="0.055" step="0.002" value="0.032" />
+              <span id="valOutline">0.032</span>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>체형 비율 조절</h2>
+            </div>
+            <div class="slider-group">
+              <div class="slider-item">
+                <label for="sliderHeadScale">머리 크기</label>
+                <input type="range" id="sliderHeadScale" min="0.80" max="1.25" step="0.02" value="1.0" />
+                <span id="valHeadScale">1.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderBodyChubby">몸통 폭</label>
+                <input type="range" id="sliderBodyChubby" min="0.80" max="1.30" step="0.02" value="1.0" />
+                <span id="valBodyChubby">1.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderLegLength">다리 길이</label>
+                <input type="range" id="sliderLegLength" min="0.70" max="1.35" step="0.02" value="1.0" />
+                <span id="valLegLength">1.00</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 탭 6: 모션 재생 & 맞춤 녹화 (내장 모션 / MMD .vmd / Mixamo .fbx / GIF·WebM) -->
+        <section class="tab-pane" id="tab-dance">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>기본 내장 모션</h2>
+              <span class="section-desc">단일 캐릭터 및 스튜디오 공통 모션에 적용</span>
+            </div>
+            <div class="chip-list" id="danceModeGrid"></div>
+
+            <div class="slider-item" style="margin-top: 14px;">
+              <label for="sliderDanceSpeed">재생 속도</label>
+              <input type="range" id="sliderDanceSpeed" min="0.4" max="2.0" step="0.1" value="1.0" />
+              <span id="valDanceSpeed">1.0x</span>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>외부 모션 파일 적용 (.vmd / .fbx)</h2>
+              <span class="section-desc">MMD 모션(.vmd) 및 Mixamo/휴머노이드 모션(.fbx) 모두 지원</span>
+            </div>
+            <div class="motion-dropzone" id="motionDropzone">
+              <input type="file" id="inputMotionFile" accept=".vmd,.fbx" hidden />
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <polyline points="9 15 12 12 15 15"></polyline>
+              </svg>
+              <p>클릭하거나 <b>.vmd</b> 또는 <b>.fbx</b> 모션 파일을 드롭하세요</p>
+              <small id="motionStatusText">MMD 표준 본(.vmd)과 Mixamo/Humanoid 본(.fbx)을 자동 리타게팅하여 재생합니다.</small>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>배경 &amp; 맞춤 녹화 (GIF / WebM)</h2>
+              <span class="section-desc">원하는 시간 · 포맷 · 배경 색상으로 모션 촬영</span>
+            </div>
+
+            <div class="record-config-grid">
+              <div class="record-row">
+                <span class="record-label">저장 포맷</span>
+                <div class="chip-list" id="recordFormatGrid">
+                  <button type="button" class="chip-btn active" data-format="gif">GIF 움짤 (.gif)</button>
+                  <button type="button" class="chip-btn" data-format="webm">WebM 영상 (.webm)</button>
+                </div>
+              </div>
+
+              <div class="record-row">
+                <span class="record-label">녹화 시간 (초)</span>
+                <div class="duration-control">
+                  <input type="range" id="sliderRecordDuration" min="1" max="15" step="0.5" value="4.0" />
+                  <div class="duration-num-wrap">
+                    <input type="number" id="inputRecordDuration" min="1" max="15" step="0.5" value="4.0" />
+                    <span>초</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="record-row">
+                <span class="record-label">배경 설정</span>
+                <div class="chip-list" id="bgModeGrid">
+                  <button type="button" class="chip-btn active" data-bg="solid">단색 배경 (선택 색상)</button>
+                  <button type="button" class="chip-btn" data-bg="transparent">투명 배경 (배경 없음)</button>
+                  <button type="button" class="chip-btn" data-bg="grid">기본 모눈 그리드</button>
+                </div>
+              </div>
+
+              <div class="record-row" id="bgColorPickerRow">
+                <span class="record-label">배경 단색 색상</span>
+                <div class="bg-color-controls">
+                  <input type="color" id="pickerRecordBgColor" class="color-box" value="#f4f4f5" title="배경 단색 선택" />
+                  <div class="swatch-list" id="paletteRecordBg"></div>
+                </div>
+              </div>
+
+              <div class="option-bar" style="margin-top: 4px;">
+                <label class="check-label">
+                  <input type="checkbox" id="chkShowFloor" checked />
+                  <span>바닥 원판 그림자 표시</span>
+                </label>
+              </div>
+            </div>
+
+            <button type="button" id="btnRecordVideo" class="record-btn" style="margin-top: 14px;">
+              <span id="recordBtnLabel">4.0초 GIF 녹화 (.gif)</span>
+            </button>
+
+            <div class="info-note">
+              <strong>파일 재불러오기 및 외부 3D 툴 안내</strong>
+              <ul>
+                <li><b>사이트 내 다시 불러오기:</b> 상단 <code>파일 불러오기</code> 또는 <code>스튜디오</code> 탭에서 이 사이트로 만든 <code>.json</code>, <code>.glb</code>, <code>.zip(MMD)</code> 파일을 언제든 다시 불러올 수 있습니다.</li>
+                <li><b>MMD (.pmx):</b> 다운로드한 ZIP의 <code>character.pmx</code>와 <code>texture.png</code>를 같은 폴더에 두고 MikuMikuDance에 불러오세요.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 탭 7: 스튜디오 모드 (다중 캐릭터 배치 및 합동·개별 모션 촬영) -->
+        <section class="tab-pane" id="tab-studio">
+          <div class="section-block">
+            <div class="section-head">
+              <div>
+                <h2>스튜디오 다중 캐릭터 무대 <span class="count-tag" id="studioCountTag">0명</span></h2>
+                <span class="section-desc">제작한 캐릭터 파일을 1개 이상 불러와 개별 또는 단체 모션으로 촬영할 수 있습니다</span>
+              </div>
+              <label class="check-label">
+                <input type="checkbox" id="chkStudioActive" />
+                <span>스튜디오 모드 활성</span>
+              </label>
+            </div>
+
+            <div class="studio-inactive-notice" id="studioInactiveNotice">
+              현재 단일 캐릭터 편집 모드입니다. <b>스튜디오 모드 활성</b>을 켜면 무대 배치 위치·각도·크기 및 캐릭터별 모션을 조정할 수 있습니다.
+            </div>
+
+            <div id="studioTopControlsWrap" class="studio-controls-wrap studio-locked">
+              <div class="studio-add-bar">
+                <button type="button" id="btnStudioAddCurrent" class="studio-action-btn primary" disabled>
+                  <span>현재 에디터 캐릭터 무대 추가</span>
+                </button>
+                <input type="file" id="inputStudioFiles" accept=".json,.zip,.glb" multiple hidden />
+                <button type="button" id="btnStudioAddFile" class="studio-action-btn" disabled>
+                  <span>파일에서 캐릭터 불러와 추가 (.json / .glb / .zip)</span>
+                </button>
+              </div>
+
+              <div class="studio-formation-bar">
+                <span class="formation-label">빠른 대형 정렬 · 동기화</span>
+                <div class="chip-list">
+                  <button type="button" class="chip-btn" id="btnStudioLine" disabled>일렬 배치</button>
+                  <button type="button" class="chip-btn" id="btnStudioVForm" disabled>V자 대형</button>
+                  <button type="button" class="chip-btn" id="btnStudioCircle" disabled>원형 대형</button>
+                  <button type="button" class="chip-btn" id="btnStudioSyncTime" disabled>모션 동시 시작</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block studio-controls-wrap studio-locked" id="studioActorSectionWrap">
+            <div class="section-head">
+              <h2>무대 출연 캐릭터 목록</h2>
+              <span class="section-desc">스튜디오 모드가 활성화된 상태에서만 이름·개별 모션·배치 슬라이더를 조정할 수 있습니다</span>
+            </div>
+            <div id="studioActorList" class="studio-actor-list"></div>
+          </div>
+
+          <div class="section-block studio-controls-wrap studio-locked" id="studioRecordSectionWrap">
+            <div class="section-head">
+              <h2>스튜디오 단체 촬영 바로가기</h2>
+              <span class="section-desc">현재 무대 구도 그대로 움짤(.gif) / 영상(.webm) 녹화</span>
+            </div>
+            <div class="studio-add-bar">
+              <button type="button" id="btnStudioQuickRecord" class="record-btn" style="margin-bottom: 0;" disabled>
+                <span id="studioRecordBtnLabel">현재 스튜디오 무대 4.0초 녹화 (.gif)</span>
+              </button>
+              <button type="button" id="btnStudioGoMotionTab" class="studio-action-btn" disabled>
+                <span>모션 · 배경 · 녹화 시간 상세 설정</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js?v=12"></script>
+</body>
+</html>
