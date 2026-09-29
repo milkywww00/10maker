@@ -1,6 +1,6 @@
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=11';
+import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=15';
 
 // 동적 바이너리 버퍼 작성기 (PMX 2.0 생성용)
 class BinaryWriter {
@@ -437,10 +437,18 @@ export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '') 
 
 // 캔버스를 PNG Uint8Array로 변환
 async function canvasToPngUint8Array(canvas) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     canvas.toBlob(async (blob) => {
-      const buf = await blob.arrayBuffer();
-      resolve(new Uint8Array(buf));
+      if (!blob) {
+        reject(new Error('텍스처 이미지 변환에 실패했습니다.'));
+        return;
+      }
+      try {
+        const buf = await blob.arrayBuffer();
+        resolve(new Uint8Array(buf));
+      } catch (err) {
+        reject(err);
+      }
     }, 'image/png');
   });
 }

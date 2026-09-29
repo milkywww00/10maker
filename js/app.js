@@ -13,10 +13,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=14';
-import { TextureGenerator } from './textureGenerator.js?v=14';
-import { CharacterBuilder } from './characterBuilder.js?v=14';
-import { CharacterAnimator } from './animator.js?v=14';
+} from './config.js?v=15';
+import { TextureGenerator } from './textureGenerator.js?v=15';
+import { CharacterBuilder } from './characterBuilder.js?v=15';
+import { CharacterAnimator } from './animator.js?v=15';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -24,7 +24,7 @@ import {
   importCharacterFile,
   encodeGif89a,
   triggerDownload,
-} from './exporter.js?v=14';
+} from './exporter.js?v=15';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -1543,20 +1543,34 @@ function initUI() {
     if (!currentCharacter) return;
     showBusy('MMD 모델(.pmx + 텍스처 + 프로젝트 데이터) 생성 중…');
     animator.resetPose();
-    await exportMmdZip(
-      currentCharacter.skinnedMesh,
-      currentCharacter.boneWorldPositions,
-      textureCanvas,
-      `${getExportFilePrefix()}_mmd.zip`,
-      state
-    );
-    hideBusy();
+    try {
+      await exportMmdZip(
+        currentCharacter.skinnedMesh,
+        currentCharacter.boneWorldPositions,
+        textureCanvas,
+        `${getExportFilePrefix()}_mmd.zip`,
+        state
+      );
+    } catch (err) {
+      console.error('MMD 내보내기 실패:', err);
+      alert('MMD 모델 내보내기 중 오류가 발생했습니다: ' + (err.message || ''));
+    } finally {
+      hideBusy();
+    }
   });
 
   document.getElementById('btnExportGlb').addEventListener('click', () => {
     if (!currentCharacter) return;
+    showBusy('GLB 3D 모델 파일 생성 중…');
     animator.resetPose();
-    exportGlbFile(currentCharacter.rootGroup, `${getExportFilePrefix()}.glb`, state);
+    try {
+      exportGlbFile(currentCharacter.rootGroup, `${getExportFilePrefix()}.glb`, state);
+    } catch (err) {
+      console.error('GLB 내보내기 실패:', err);
+      alert('GLB 모델 내보내기 중 오류가 발생했습니다: ' + (err.message || ''));
+    } finally {
+      setTimeout(hideBusy, 400);
+    }
   });
 
   document.getElementById('btnRecordVideo').addEventListener('click', startCustomRecording);
@@ -2396,27 +2410,34 @@ async function recordCustomGif(durationSec, isTransparent, fillBgColor) {
 }
 
 async function recordCustomWebm(durationSec) {
-  if (typeof MediaRecorder === 'undefined') {
-    throw new Error('현재 브라우저에서 WebM 비디오 녹화를 지원하지 않습니다. GIF 포맷을 선택해주세요.');
+  if (typeof MediaRecorder === 'undefined' || typeof canvas.captureStream !== 'function') {
+    throw new Error('현재 브라우저에서 동영상 녹화를 지원하지 않습니다. GIF 포맷을 선택해주세요.');
   }
 
   const stream = canvas.captureStream(30);
   let mimeType = 'video/webm;codecs=vp9';
   if (!MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = 'video/webm';
+    if (MediaRecorder.isTypeSupported('video/webm')) {
+      mimeType = 'video/webm';
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+      mimeType = 'video/mp4';
+    } else {
+      mimeType = '';
+    }
   }
 
-  const recorder = new MediaRecorder(stream, { mimeType });
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
   const chunks = [];
 
   recorder.ondataavailable = (e) => {
     if (e.data && e.data.size > 0) chunks.push(e.data);
   };
 
+  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
   const stopPromise = new Promise((resolve) => {
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' });
-      triggerDownload(blob, `${getExportFilePrefix()}_motion_${Date.now()}.webm`);
+      const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+      triggerDownload(blob, `${getExportFilePrefix()}_motion_${Date.now()}.${ext}`);
       resolve();
     };
   });
@@ -2427,7 +2448,7 @@ async function recordCustomWebm(durationSec) {
   const totalMs = durationSec * 1000;
   while (performance.now() - startMs < totalMs) {
     const elapsed = Math.min(durationSec, (performance.now() - startMs) / 1000).toFixed(1);
-    showBusy(`WebM 영상 녹화 중… (${elapsed}초 / ${durationSec.toFixed(1)}초)`);
+    showBusy(`영상 녹화 중… (${elapsed}초 / ${durationSec.toFixed(1)}초)`);
     await new Promise((r) => setTimeout(r, 100));
   }
 
