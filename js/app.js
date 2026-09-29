@@ -13,10 +13,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=16';
-import { TextureGenerator } from './textureGenerator.js?v=16';
-import { CharacterBuilder } from './characterBuilder.js?v=16';
-import { CharacterAnimator } from './animator.js?v=16';
+} from './config.js?v=17';
+import { TextureGenerator } from './textureGenerator.js?v=17';
+import { CharacterBuilder } from './characterBuilder.js?v=17';
+import { CharacterAnimator } from './animator.js?v=17';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -24,7 +24,7 @@ import {
   importCharacterFile,
   encodeGif89a,
   triggerDownload,
-} from './exporter.js?v=16';
+} from './exporter.js?v=17';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -220,6 +220,7 @@ function applyBackgroundMode() {
 
   if (recordConfig.bgMode === 'solid') {
     scene.background = new THREE.Color(recordConfig.bgColor);
+    floorMat.color.set(recordConfig.bgColor); // 바닥 디스크 색상을 단색 배경과 동일하게 일치시켜 경계선 잘림 방지
     if (frame) {
       frame.classList.remove('bg-transparent');
       frame.classList.add('bg-solid');
@@ -239,6 +240,7 @@ function applyBackgroundMode() {
     // 'grid'
     scene.background = null;
     renderer.setClearColor(0x000000, 0);
+    floorMat.color.set(0xe9ecef);
     if (frame) {
       frame.classList.remove('bg-transparent', 'bg-solid');
       frame.style.backgroundColor = '';
@@ -246,7 +248,7 @@ function applyBackgroundMode() {
     if (colorRow) colorRow.style.display = 'none';
   }
 
-  floorMesh.visible = Boolean(recordConfig.showFloor);
+  floorMesh.visible = recordConfig.bgMode === 'transparent' ? false : Boolean(recordConfig.showFloor);
 }
 
 function updateRecordButtonLabels() {
@@ -1580,6 +1582,7 @@ function initUI() {
   syncStudioStatusUI();
   renderStudioActorList();
   syncUIFromState();
+  initMediaModal();
 }
 
 function initStudioControls() {
@@ -2283,10 +2286,95 @@ function initMotionDropzone() {
   });
 }
 
+let currentModalBlob = null;
+let currentModalFilename = '';
+let currentModalObjectUrl = null;
+
+function showMediaResultModal(blob, filename, mimeType) {
+  const modal = document.getElementById('mediaResultModal');
+  const img = document.getElementById('mediaResultImg');
+  const title = document.getElementById('mediaResultTitle');
+  if (!modal || !img) return;
+
+  if (currentModalObjectUrl) {
+    URL.revokeObjectURL(currentModalObjectUrl);
+    currentModalObjectUrl = null;
+  }
+
+  currentModalBlob = blob;
+  currentModalFilename = filename;
+  currentModalObjectUrl = URL.createObjectURL(blob);
+
+  img.src = currentModalObjectUrl;
+  if (title) {
+    title.textContent = mimeType.includes('gif') ? '움짤(GIF) 완성' : '스냅샷(PNG) 완성';
+  }
+  modal.hidden = false;
+}
+
+function hideMediaResultModal() {
+  const modal = document.getElementById('mediaResultModal');
+  if (modal) modal.hidden = true;
+  if (currentModalObjectUrl) {
+    URL.revokeObjectURL(currentModalObjectUrl);
+    currentModalObjectUrl = null;
+  }
+  currentModalBlob = null;
+  currentModalFilename = '';
+}
+
+function initMediaModal() {
+  const modal = document.getElementById('mediaResultModal');
+  const closeBtn = document.getElementById('btnCloseMediaModal');
+  const shareBtn = document.getElementById('btnMediaModalShare');
+  const downloadBtn = document.getElementById('btnMediaModalDownload');
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', hideMediaResultModal);
+  }
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) hideMediaResultModal();
+    });
+  }
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+      if (!currentModalBlob || !currentModalFilename) return;
+      if (typeof navigator.share === 'function') {
+        try {
+          const file = new File([currentModalBlob], currentModalFilename, {
+            type: currentModalBlob.type || 'application/octet-stream'
+          });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: currentModalFilename
+            });
+            return;
+          }
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+        }
+      }
+      triggerDownload(currentModalBlob, currentModalFilename);
+    });
+  }
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      if (!currentModalBlob || !currentModalFilename) return;
+      triggerDownload(currentModalBlob, currentModalFilename);
+    });
+  }
+}
+
 function captureSnapshotPng() {
   renderer.render(scene, camera);
-  canvas.toBlob((blob) => {
-    if (blob) triggerDownload(blob, `${getExportFilePrefix()}_snapshot_${Date.now()}.png`);
+  canvas.toBlob(async (blob) => {
+    if (blob) {
+      const filename = `${getExportFilePrefix()}_snapshot_${Date.now()}.png`;
+      await triggerDownload(blob, filename);
+      showMediaResultModal(blob, filename, 'image/png');
+    }
   }, 'image/png');
 }
 
@@ -2343,8 +2431,10 @@ async function recordCustomGif(durationSec, isTransparent, fillBgColor) {
   const delayCs = Math.round(100 / fps);
   const totalFrames = Math.max(10, Math.round(durationSec * fps));
   const stepDt = 1.0 / fps;
-  const gw = 384;
-  const gh = 384;
+  const gw = 480;
+  const gh = 480;
+  const renderW = 960;
+  const renderH = 960;
 
   isGifRecordingNow = true;
 
@@ -2358,18 +2448,20 @@ async function recordCustomGif(durationSec, isTransparent, fillBgColor) {
   offCanvas.width = gw;
   offCanvas.height = gh;
   const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+  offCtx.imageSmoothingEnabled = true;
+  offCtx.imageSmoothingQuality = 'high';
 
   const framesRgba = [];
 
   try {
     renderer.setPixelRatio(1);
-    renderer.setSize(gw, gh, false);
+    renderer.setSize(renderW, renderH, false);
     camera.aspect = 1.0;
     camera.updateProjectionMatrix();
 
     for (let i = 0; i < totalFrames; i++) {
       const elapsed = ((i + 1) / fps).toFixed(1);
-      showBusy(`GIF 프레임 촬영 중… (${elapsed}초 / ${durationSec.toFixed(1)}초)`);
+      showBusy(`GIF 고화질 프레임 캡처 중… (${elapsed}초 / ${durationSec.toFixed(1)}초)`);
 
       // 첫 프레임 이후 프레임마다 정해진 델타 타임(1/fps)만큼 정확히 모션 진행
       if (i > 0) {
@@ -2397,7 +2489,9 @@ async function recordCustomGif(durationSec, isTransparent, fillBgColor) {
     await new Promise((r) => setTimeout(r, 60));
 
     const gifBlob = encodeGif89a(framesRgba, gw, gh, delayCs, isTransparent);
-    triggerDownload(gifBlob, `${getExportFilePrefix()}_motion_${Date.now()}.gif`);
+    const filename = `${getExportFilePrefix()}_motion_${Date.now()}.gif`;
+    await triggerDownload(gifBlob, filename);
+    showMediaResultModal(gifBlob, filename, 'image/gif');
   } finally {
     isGifRecordingNow = false;
     renderer.setPixelRatio(prevPixelRatio);

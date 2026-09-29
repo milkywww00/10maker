@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=17" />
   <script type="importmap">
     {
       "imports": {
@@ -106,6 +106,23 @@
           <div class="busy-card">
             <div class="spinner"></div>
             <p id="busyText">처리 중…</p>
+          </div>
+        </div>
+
+        <div class="media-result-modal" id="mediaResultModal" hidden>
+          <div class="media-result-card">
+            <div class="media-result-header">
+              <h3 id="mediaResultTitle">녹화 완료</h3>
+              <button type="button" class="modal-close-btn" id="btnCloseMediaModal" aria-label="닫기">✕</button>
+            </div>
+            <div class="media-result-preview-box">
+              <img id="mediaResultImg" src="" alt="결과물 미리보기" />
+            </div>
+            <p class="media-result-hint">모바일에서는 이미지를 <strong>길게 꾹 눌러 [사진에 저장]</strong>하시거나 아래 버튼을 누르세요.</p>
+            <div class="media-result-actions">
+              <button type="button" id="btnMediaModalShare" class="btn-media-share">공유 / 사진에 저장</button>
+              <button type="button" id="btnMediaModalDownload" class="btn-media-download">다운로드</button>
+            </div>
           </div>
         </div>
       </div>
@@ -570,6 +587,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=16"></script>
+  <script type="module" src="js/app.js?v=17"></script>
 </body>
 </html>

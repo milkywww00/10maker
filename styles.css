@@ -1295,4 +1295,134 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
+/* 모바일 친화적 미디어 저장 모달 */
+.media-result-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 21, 0.72);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.media-result-modal[hidden] {
+  display: none !important;
+}
+
+.media-result-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.media-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.media-result-header h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.media-result-preview-box {
+  background: repeating-conic-gradient(#f4f4f5 0% 25%, #ffffff 0% 50%) 50% / 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  max-height: 340px;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.media-result-preview-box img {
+  max-width: 100%;
+  max-height: 316px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.media-result-hint {
+  margin: 0;
+  padding: 10px 18px;
+  font-size: 0.82rem;
+  color: var(--text-sub);
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.media-result-hint strong {
+  color: #18181b;
+  font-weight: 800;
+}
+
+.media-result-actions {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+}
+
+.media-result-actions button {
+  flex: 1;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-media-share {
+  background: #18181b;
+  color: #ffffff;
+  border: none;
+}
+.btn-media-share:hover {
+  background: #27272a;
+}
+
+.btn-media-download {
+  background: #f4f4f5;
+  color: #18181b;
+  border: 1px solid var(--border);
+}
+.btn-media-download:hover {
+  background: #e4e4e7;
+}
+
 
