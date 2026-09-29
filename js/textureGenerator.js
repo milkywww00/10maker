@@ -268,16 +268,16 @@ export class TextureGenerator {
         ctx.stroke();
       });
     } else if (type === 'cheek_stripes') {
-      // 볼 바깥쪽 외곽선까지 충분히 뻗어나가 중간에 애매하게 끊기지 않게 함
+      // 볼 바깥쪽으로 단정하게 뻗는 수염 줄무늬 (뒤통수로 넘어가지 않도록 범위 최적화)
       ctx.lineCap = 'round';
-      ctx.lineWidth = 16;
+      ctx.lineWidth = 14;
       [-1, 1].forEach((dir) => {
         for (let i = 0; i < 2; i++) {
-          const sy = eyeY + 6 + i * 32;
-          const sx = cx + dir * (eyeSpacing + 66);
+          const sy = eyeY + 6 + i * 30;
+          const sx = cx + dir * (eyeSpacing + 36);
           ctx.beginPath();
           ctx.moveTo(sx, sy);
-          ctx.lineTo(cx + dir * 350, sy + 8);
+          ctx.lineTo(cx + dir * (eyeSpacing + 130), sy + 6);
           ctx.stroke();
         }
       });
@@ -330,8 +330,8 @@ export class TextureGenerator {
     const offsetY = (state.blushY ?? 0) * 45;
     const blushColor = state.blushColor || '#ff8da1';
 
-    const by = eyeY + 40 + offsetY;
-    const bxOffset = eyeSpacing + 56;
+    const by = eyeY + 36 + offsetY;
+    const bxOffset = eyeSpacing + 14;
 
     ctx.save();
     ctx.globalAlpha = opacity;
@@ -343,37 +343,44 @@ export class TextureGenerator {
 
       if (type === 'comic_circle' || type === 'comic_circle_slash') {
         ctx.beginPath();
-        ctx.ellipse(bx, by, 32 * scale, 22 * scale, 0, 0, Math.PI * 2);
+        ctx.ellipse(bx, by, 28 * scale, 20 * scale, 0, 0, Math.PI * 2);
         ctx.fill();
 
         if (type === 'comic_circle_slash') {
           ctx.save();
           ctx.globalAlpha = Math.min(1, opacity + 0.15);
           ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 4.5 * scale;
+          ctx.lineWidth = 4.0 * scale;
           ctx.lineCap = 'round';
           for (let i = -1; i <= 1; i++) {
             ctx.beginPath();
-            ctx.moveTo(bx + i * 11 * scale - 5 * scale, by + 9 * scale);
-            ctx.lineTo(bx + i * 11 * scale + 5 * scale, by - 9 * scale);
+            ctx.moveTo(bx + i * 10 * scale - 4 * scale, by + 8 * scale);
+            ctx.lineTo(bx + i * 10 * scale + 4 * scale, by - 8 * scale);
             ctx.stroke();
           }
           ctx.restore();
         }
       } else if (type === 'slash_only') {
-        ctx.lineWidth = 6 * scale;
+        ctx.lineWidth = 5.2 * scale;
         ctx.lineCap = 'round';
         for (let i = -1; i <= 1; i++) {
           ctx.beginPath();
-          ctx.moveTo(bx + i * 13 * scale - 6 * scale, by + 12 * scale);
-          ctx.lineTo(bx + i * 13 * scale + 6 * scale, by - 12 * scale);
+          ctx.moveTo(bx + i * 11 * scale - 5 * scale, by + 10 * scale);
+          ctx.lineTo(bx + i * 11 * scale + 5 * scale, by - 10 * scale);
           ctx.stroke();
         }
       } else if (type === 'soft_oval') {
-        const rad = 44 * scale;
-        const grad = ctx.createRadialGradient(bx, by, 3, bx, by, rad);
-        grad.addColorStop(0, blushColor);
-        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        const rad = 36 * scale;
+        // hex 색상을 파싱하여 알파만 0으로 부드럽게 감쇠 (어두운/회색 캐릭터에서 흰 테두리 생김 방지)
+        let r = 255, g = 141, b = 161;
+        if (blushColor.startsWith('#') && blushColor.length >= 7) {
+          r = parseInt(blushColor.slice(1, 3), 16) || 255;
+          g = parseInt(blushColor.slice(3, 5), 16) || 141;
+          b = parseInt(blushColor.slice(5, 7), 16) || 161;
+        }
+        const grad = ctx.createRadialGradient(bx, by, 2, bx, by, rad);
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${opacity})`);
+        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.arc(bx, by, rad, 0, Math.PI * 2);
@@ -556,17 +563,17 @@ export class TextureGenerator {
     };
 
     // 1. 밴드 3종 배치
-    // 코 위 밴드: 눈 사이 코다리 위치 (눈과 코를 가리지 않는 최적 위치)
+    // 코 위 밴드: 콧등 중앙에 알맞은 크기로 밀착
     if (extras.includes('bandaid_nose')) {
-      drawBandaid(cx, eyeY - 6, 80, 32, 0);
+      drawBandaid(cx, eyeY - 6, 72, 28, 0);
     }
-    // 왼쪽 볼 밴드: 3D 곡면 투영 왜곡 보정(가로 늘어남 방지: w=52) 및 눈 가림 완전 차단
+    // 왼쪽 볼 밴드: 볼 중앙(눈 아래 약간 바깥)에 귀엽고 단정하게 밀착
     if (extras.includes('bandaid_left_cheek')) {
-      drawBandaid(cx - eyeSpacing - 78, eyeY + 52, 54, 34, -0.14);
+      drawBandaid(cx - eyeSpacing - 14, eyeY + 48, 48, 28, -0.12);
     }
-    // 오른쪽 볼 밴드: 3D 곡면 투영 왜곡 보정(가로 늘어남 방지: w=52) 및 눈 가림 완전 차단
+    // 오른쪽 볼 밴드: 볼 중앙(눈 아래 약간 바깥)에 귀엽고 단정하게 밀착
     if (extras.includes('bandaid_right_cheek')) {
-      drawBandaid(cx + eyeSpacing + 78, eyeY + 52, 54, 34, 0.14);
+      drawBandaid(cx + eyeSpacing + 14, eyeY + 48, 48, 28, 0.12);
     }
 
     // 2. 의료용 하얀 안대 — 사각형(라운드 사각) 부드러운 거즈 패드 + 귀걸이형 깔끔한 탄성 끈

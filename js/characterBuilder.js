@@ -358,8 +358,18 @@ export class CharacterBuilder {
       if (isFrontHemisphere) {
         for (let k = 0; k < 3; k++) {
           const idx = i + k;
-          const dx = nPos.getX(idx) / headScale;
-          const dy = (nPos.getY(idx) - headCenterY) / headScale;
+          const vx = nPos.getX(idx) / headScale;
+          const vy = (nPos.getY(idx) - headCenterY) / headScale;
+          const vz = nPos.getZ(idx) / headScale;
+
+          // 볼 및 외곽 영역으로 갈 때 구면 곡률에 의해 텍스처가 가로로 길게 늘어나는 현상을 원천 방지
+          // 정면 Z축 기준 방위각(Azimuth)을 적용하여 표면 호의 길이에 비례하는 균일 UV 투영 계산
+          const normX = Math.max(-1.0, Math.min(1.0, vx / rx));
+          const normZ = Math.max(0.0, Math.min(1.0, vz / rz));
+          const theta = Math.atan2(normX, Math.max(0.0001, normZ));
+          const dx = rx * theta;
+          const dy = vy;
+
           const { u, v } = getHeadOrthographicUV(dx, dy);
           nUv.setXY(idx, u, v);
         }
