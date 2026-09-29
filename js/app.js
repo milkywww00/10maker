@@ -13,10 +13,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=17';
-import { TextureGenerator } from './textureGenerator.js?v=17';
-import { CharacterBuilder } from './characterBuilder.js?v=17';
-import { CharacterAnimator } from './animator.js?v=17';
+} from './config.js?v=18';
+import { TextureGenerator } from './textureGenerator.js?v=18';
+import { CharacterBuilder } from './characterBuilder.js?v=18';
+import { CharacterAnimator } from './animator.js?v=18';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -24,7 +24,8 @@ import {
   importCharacterFile,
   encodeGif89a,
   triggerDownload,
-} from './exporter.js?v=17';
+  shareFile,
+} from './exporter.js?v=18';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -2340,23 +2341,10 @@ function initMediaModal() {
   if (shareBtn) {
     shareBtn.addEventListener('click', async () => {
       if (!currentModalBlob || !currentModalFilename) return;
-      if (typeof navigator.share === 'function') {
-        try {
-          const file = new File([currentModalBlob], currentModalFilename, {
-            type: currentModalBlob.type || 'application/octet-stream'
-          });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: currentModalFilename
-            });
-            return;
-          }
-        } catch (err) {
-          if (err.name === 'AbortError') return;
-        }
+      const shared = await shareFile(currentModalBlob, currentModalFilename);
+      if (!shared) {
+        triggerDownload(currentModalBlob, currentModalFilename);
       }
-      triggerDownload(currentModalBlob, currentModalFilename);
     });
   }
   if (downloadBtn) {

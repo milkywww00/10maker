@@ -1,6 +1,6 @@
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=17';
+import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=18';
 
 // 동적 바이너리 버퍼 작성기 (PMX 2.0 생성용)
 class BinaryWriter {
@@ -1060,12 +1060,19 @@ export function encodeGif89a(framesRgba, width, height, delayCs = 5, isTranspare
   return new Blob(chunks, { type: 'image/gif' });
 }
 
-export async function triggerDownload(blob, filename) {
-  // 모바일 환경 (iOS, Android, 인앱 브라우저)에서 파일 공유/저장 지원
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+export function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
 
-  if (isMobile && typeof navigator.share === 'function') {
+export async function shareFile(blob, filename) {
+  if (typeof navigator.share === 'function') {
     try {
       const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1073,23 +1080,13 @@ export async function triggerDownload(blob, filename) {
           files: [file],
           title: filename,
         });
-        return;
+        return true;
       }
     } catch (shareErr) {
-      if (shareErr.name === 'AbortError') return; // 사용자 취소
-      console.warn('Web Share 실패, 일반 다운로드로 전환:', shareErr);
+      if (shareErr.name === 'AbortError') return true; // 사용자 취소
+      console.warn('Web Share 실패:', shareErr);
     }
   }
-
-  // 표준 다운로드 (PC 및 fallback)
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.target = '_blank';
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  return false;
 }
+
