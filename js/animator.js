@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { BONE_INDEX } from './characterBuilder.js?v=11';
+import { BONE_INDEX } from './characterBuilder.js?v=19';
 
 // FBX (Mixamo / Unity / Unreal / Blender Humanoid) 본 이름 정제
 function cleanFbxBoneName(rawName) {
@@ -64,6 +64,19 @@ function clampQuaternionAngle(quat, maxRad) {
   if (angle <= maxRad || angle < 1e-5) return quat;
   const ident = new THREE.Quaternion();
   return ident.slerp(quat, maxRad / angle);
+}
+
+// 쿼터니언을 수직축(Y축) 회전(Yaw)과 기울기(Pitch/Roll)로 분해
+function decomposeYawAndTilt(quat) {
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quat).normalize();
+  let qTilt;
+  if (up.y < -0.99) {
+    qTilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI);
+  } else {
+    qTilt = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+  }
+  const qYaw = qTilt.clone().invert().multiply(quat).normalize();
+  return { qYaw, qTilt };
 }
 
 export class CharacterAnimator {
@@ -296,7 +309,7 @@ export class CharacterAnimator {
     const headNode = roleNodes.head || roleNodes.neck || null;
     const hipsNode = roleNodes.hips || null;
 
-    // 바인드 포즈(T포즈/A포즈)에서의 월드 쿼터니언을 기록해 축 방향 기준점으로 활용
+    // 바인드 포즈(초기 T포즈/A포즈)에서의 월드 쿼터니언을 기록해 축 방향 기준점으로 활용
     fbxScene.updateMatrixWorld(true);
     const getWQ = (node) => {
       if (!node) return new THREE.Quaternion();
@@ -310,6 +323,10 @@ export class CharacterAnimator {
       node.getWorldPosition(v);
       return v;
     };
+
+    const initUp = (hipsNode && chestNode)
+      ? getWP(chestNode).sub(getWP(hipsNode))
+      : new THREE.Vector3(0, 1, 0);
 
     const bindHipsWQ = getWQ(hipsNode);
     const bindChestWQ = getWQ(chestNode);
@@ -328,11 +345,13 @@ export class CharacterAnimator {
     let refChestWQ = bindChestWQ.clone();
     let refHeadWQ = bindHeadWQ.clone();
     if (hipsNode && chestNode) {
-      const bindUp = getWP(chestNode).sub(getWP(hipsNode));
-      if (bindUp.lengthSq() < 1e-4 || Math.abs(bindUp.y) < Math.abs(bindUp.z)) {
-        refHipsWQ = getWQ(hipsNode);
-        refChestWQ = getWQ(chestNode);
-        refHeadWQ = getWQ(headNode);
+      if (initUp.lengthSq() < 1e-4 || Math.abs(initUp.y) < Math.abs(initUp.z)) {
+        const t0Up = getWP(chestNode).sub(getWP(hipsNode));
+        if (Math.abs(t0Up.y) >= Math.abs(t0Up.z)) {
+          refHipsWQ = getWQ(hipsNode);
+          refChestWQ = getWQ(chestNode);
+          refHeadWQ = getWQ(headNode);
+        }
       }
     }
     const refHipsWQInv = refHipsWQ.clone().invert();
@@ -340,7 +359,10 @@ export class CharacterAnimator {
     const refHeadWQInv = refHeadWQ.clone().invert();
 
     const pHips0 = getWP(hipsNode);
-    const fbxHipHeight = Math.max(0.05, Math.abs(pHips0.y) > 0.05 ? Math.abs(pHips0.y) : 95.0);
+    let fbxHipHeight = Math.abs(pHips0.y);
+    if (fbxHipHeight < 0.2) {
+      fbxHipHeight = 100.0;
+    }
 
     // 우리 캐릭터의 팔·다리 기본 방향 벡터 (어깨 볼 조인트 기준 A포즈 각도 0.58 rad)
     const armAngle = 0.58;
@@ -369,8 +391,14 @@ export class CharacterAnimator {
       const wHips = hipsNode
         ? getWQ(hipsNode).multiply(refHipsWQInv).normalize()
         : new THREE.Quaternion();
-      // 과도한 골반 기울어짐 완화
-      const safeWHips = clampQuaternionAngle(wHips, 1.25);
+
+      // 수직축 회전(Yaw)과 기울기(Pitch/Roll)를 분해:
+      // - Yaw (Y축 회전): 회전 및 시선 방향 100% 온전히 유지
+      // - Tilt (X/Z축 앞뒤/좌우 기울기): 2등신 대두 캐릭터가 넘어지거나 바닥에 머리를 찧지 않도록
+      //   최대 0.16 rad(약 9도)로 제한하고 강도를 30%로 부드럽게 감쇠
+      const { qYaw, qTilt } = decomposeYawAndTilt(wHips);
+      const safeTilt = new THREE.Quaternion().slerp(clampQuaternionAngle(qTilt, 0.16), 0.30);
+      const safeWHips = safeTilt.multiply(qYaw).normalize();
       ensureTrack(BONE_INDEX.CENTER).push({ time: t, deltaQuat: safeWHips });
 
       if (hipsNode) {
@@ -384,7 +412,8 @@ export class CharacterAnimator {
         ? getWQ(chestNode).multiply(refChestWQInv).normalize()
         : safeWHips.clone();
       const localUpper = safeWHips.clone().invert().multiply(wChest).normalize();
-      const safeLocalUpper = clampQuaternionAngle(localUpper, 0.75);
+      // 상체 그루브도 과도하게 꺾이지 않도록 0.28 rad(약 16도) 제한 및 50% 감쇠
+      const safeLocalUpper = new THREE.Quaternion().slerp(clampQuaternionAngle(localUpper, 0.28), 0.50);
       const effectiveWChest = safeWHips.clone().multiply(safeLocalUpper).normalize();
       const effectiveWChestInv = effectiveWChest.clone().invert();
       ensureTrack(BONE_INDEX.UPPER_BODY).push({ time: t, deltaQuat: safeLocalUpper });
@@ -393,7 +422,7 @@ export class CharacterAnimator {
       if (headNode) {
         const wHead = getWQ(headNode).multiply(refHeadWQInv).normalize();
         const localHead = effectiveWChestInv.clone().multiply(wHead).normalize();
-        const dampedHead = new THREE.Quaternion().slerp(clampQuaternionAngle(localHead, 0.75), 0.78);
+        const dampedHead = new THREE.Quaternion().slerp(clampQuaternionAngle(localHead, 0.30), 0.40);
         ensureTrack(BONE_INDEX.HEAD).push({ time: t, deltaQuat: dampedHead });
       }
 
@@ -435,7 +464,7 @@ export class CharacterAnimator {
         // setFromUnitVectors는 축 방향 롤(비틀림)이 전혀 없는 순수 스윙 회전만 생성함!
         const qArm = clampQuaternionAngle(
           new THREE.Quaternion().setFromUnitVectors(restDir, localDir),
-          1.65
+          1.25
         );
         ensureTrack(armIdx).push({ time: t, deltaQuat: qArm });
 
@@ -446,7 +475,7 @@ export class CharacterAnimator {
             const armWorldQ = effectiveWChest.clone().multiply(qArm);
             const foreLocalDir = vFore.applyQuaternion(armWorldQ.invert()).normalize();
             const qElbowFull = new THREE.Quaternion().setFromUnitVectors(restDir, foreLocalDir);
-            const qElbow = new THREE.Quaternion().slerp(clampQuaternionAngle(qElbowFull, 0.85), 0.38);
+            const qElbow = new THREE.Quaternion().slerp(clampQuaternionAngle(qElbowFull, 0.75), 0.35);
             ensureTrack(elbowIdx).push({ time: t, deltaQuat: qElbow });
           }
         }
@@ -468,10 +497,8 @@ export class CharacterAnimator {
         vThigh.normalize();
 
         const localThighDir = vThigh.applyQuaternion(wLowerInv).normalize();
-        const qLeg = clampQuaternionAngle(
-          new THREE.Quaternion().setFromUnitVectors(charRestDirLeg, localThighDir),
-          1.10
-        );
+        const qLegFull = new THREE.Quaternion().setFromUnitVectors(charRestDirLeg, localThighDir);
+        const qLeg = new THREE.Quaternion().slerp(clampQuaternionAngle(qLegFull, 0.80), 0.70);
         ensureTrack(legIdx).push({ time: t, deltaQuat: qLeg });
 
         if (pFoot) {
@@ -481,7 +508,7 @@ export class CharacterAnimator {
             const legWorldQ = safeWHips.clone().multiply(qLeg);
             const shinLocalDir = vShin.applyQuaternion(legWorldQ.invert()).normalize();
             const qKneeFull = new THREE.Quaternion().setFromUnitVectors(charRestDirLeg, shinLocalDir);
-            const qKnee = new THREE.Quaternion().slerp(clampQuaternionAngle(qKneeFull, 0.90), 0.50);
+            const qKnee = new THREE.Quaternion().slerp(clampQuaternionAngle(qKneeFull, 0.70), 0.40);
             ensureTrack(kneeIdx).push({ time: t, deltaQuat: qKnee });
           }
         }
@@ -493,7 +520,7 @@ export class CharacterAnimator {
     }
 
     const charHipY = this.restPose[BONE_INDEX.CENTER] ? this.restPose[BONE_INDEX.CENTER].pos.y : 0.62;
-    const unitScale = (charHipY * 0.75) / fbxHipHeight;
+    const unitScale = (charHipY * 0.45) / fbxHipHeight;
 
     this.fbxData = {
       name: clip.name || 'FBX Animation',
@@ -536,10 +563,10 @@ export class CharacterAnimator {
       const alpha = f1.time > f0.time ? (t - f0.time) / (f1.time - f0.time) : 0;
       const dp = f0.deltaPos.clone().lerp(f1.deltaPos, alpha).multiplyScalar(unitScale);
 
-      // 캐릭터가 화면 밖으로 멀리 걸어나가거나 바닥을 뚫고 내려가지 않도록 안전 범위 클램핑
-      dp.x = THREE.MathUtils.clamp(dp.x, -0.45, 0.45);
-      dp.z = THREE.MathUtils.clamp(dp.z, -0.45, 0.45);
-      dp.y = THREE.MathUtils.clamp(dp.y, -0.08, 0.45);
+      // 캐릭터가 화면 밖으로 멀리 걸어나가거나 바닥을 뚫고 내려가지 않도록 안전 범위 클램핑 및 감쇠
+      dp.x = THREE.MathUtils.clamp(dp.x * 0.4, -0.15, 0.15);
+      dp.z = THREE.MathUtils.clamp(dp.z * 0.4, -0.15, 0.15);
+      dp.y = THREE.MathUtils.clamp(dp.y * 0.4, -0.02, 0.12);
 
       this.bones[BONE_INDEX.CENTER].position.copy(this.restPose[BONE_INDEX.CENTER].pos).add(dp);
     }
