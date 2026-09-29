@@ -1,6 +1,6 @@
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=21';
+import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=22';
 
 // 동적 바이너리 버퍼 작성기 (PMX 2.0 생성용)
 class BinaryWriter {
@@ -674,10 +674,12 @@ function buildUnifiedGlobalPalette(framesRgba, isTransparent) {
         b = Math.min(255, Math.round((b * 255) / a));
       }
       const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-      histCount[key]++;
-      histR[key] += r;
-      histG[key] += g;
-      histB[key] += b;
+      if (histCount[key] < 8000) {
+        histCount[key]++;
+        histR[key] += r;
+        histG[key] += g;
+        histB[key] += b;
+      }
     }
   }
 
@@ -725,8 +727,8 @@ function buildUnifiedGlobalPalette(framesRgba, isTransparent) {
       if (bx.cells.length < 2) continue;
       const span = Math.max(bx.rMax - bx.rMin, bx.gMax - bx.gMin, bx.bMax - bx.bMin);
       if (span === 0) continue;
-      // 색 공간 대비 폭(span)과 픽셀 빈도(count)를 이상적으로 조율하여 외곽선과 캐릭터 피부톤 모두 완벽 보존
-      const score = span * Math.pow(bx.count, 0.28);
+      // 색 공간 범위(span)와 포함된 고유 색상 수를 기준으로 분할하여 모든 캐릭터 부위 색상 독립 보장
+      const score = span * bx.cells.length;
       if (score > bestScore) {
         bestScore = score;
         bestIdx = i;
@@ -739,23 +741,37 @@ function buildUnifiedGlobalPalette(framesRgba, isTransparent) {
     const gSpan = target.gMax - target.gMin;
     const bSpan = target.bMax - target.bMin;
 
+    let sortFn, getChannelVal, minVal, maxVal;
     if (rSpan >= gSpan && rSpan >= bSpan) {
-      target.cells.sort((a, b) => ((a >> 10) & 31) - ((b >> 10) & 31));
+      sortFn = (a, b) => ((a >> 10) & 31) - ((b >> 10) & 31);
+      getChannelVal = (c) => (c >> 10) & 31;
+      minVal = target.rMin;
+      maxVal = target.rMax;
     } else if (gSpan >= rSpan && gSpan >= bSpan) {
-      target.cells.sort((a, b) => ((a >> 5) & 31) - ((b >> 5) & 31));
+      sortFn = (a, b) => ((a >> 5) & 31) - ((b >> 5) & 31);
+      getChannelVal = (c) => (c >> 5) & 31;
+      minVal = target.gMin;
+      maxVal = target.gMax;
     } else {
-      target.cells.sort((a, b) => (a & 31) - (b & 31));
+      sortFn = (a, b) => (a & 31) - (b & 31);
+      getChannelVal = (c) => c & 31;
+      minVal = target.bMin;
+      maxVal = target.bMax;
     }
 
-    let halfCount = target.count >> 1;
-    let acc = 0;
-    let splitPos = 1;
-    for (let i = 0; i < target.cells.length - 1; i++) {
-      acc += histCount[target.cells[i]];
-      if (acc >= halfCount) {
-        splitPos = i + 1;
+    target.cells.sort(sortFn);
+
+    // 색 공간 중간값(midpoint)을 기준으로 분할하여 거대한 배경 면적이 캐릭터 피부/귀 색상을 흡수하지 못하도록 차단
+    const midVal = (minVal + maxVal) >> 1;
+    let splitPos = -1;
+    for (let i = 0; i < target.cells.length; i++) {
+      if (getChannelVal(target.cells[i]) > midVal) {
+        splitPos = i;
         break;
       }
+    }
+    if (splitPos <= 0 || splitPos >= target.cells.length) {
+      splitPos = target.cells.length >> 1;
     }
 
     const leftCells = target.cells.slice(0, splitPos);
