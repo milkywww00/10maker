@@ -13,10 +13,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=11';
-import { TextureGenerator } from './textureGenerator.js?v=11';
-import { CharacterBuilder } from './characterBuilder.js?v=11';
-import { CharacterAnimator } from './animator.js?v=11';
+} from './config.js?v=13';
+import { TextureGenerator } from './textureGenerator.js?v=13';
+import { CharacterBuilder } from './characterBuilder.js?v=13';
+import { CharacterAnimator } from './animator.js?v=13';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -24,7 +24,7 @@ import {
   importCharacterFile,
   encodeGif89a,
   triggerDownload,
-} from './exporter.js?v=11';
+} from './exporter.js?v=13';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -2322,12 +2322,23 @@ async function startCustomRecording() {
   }
 }
 
+let isGifRecordingNow = false;
+
 async function recordCustomGif(durationSec, isTransparent, fillBgColor) {
   const fps = 20;
   const delayCs = Math.round(100 / fps);
   const totalFrames = Math.max(10, Math.round(durationSec * fps));
+  const stepDt = 1.0 / fps;
   const gw = 384;
   const gh = 384;
+
+  isGifRecordingNow = true;
+
+  // 1:1 정사각형 GIF 비율에 맞춘 임시 렌더러/카메라 보정
+  const prevAspect = camera.aspect;
+  const prevSize = new THREE.Vector2();
+  renderer.getSize(prevSize);
+  const prevPixelRatio = renderer.getPixelRatio();
 
   const offCanvas = document.createElement('canvas');
   offCanvas.width = gw;
@@ -2336,31 +2347,52 @@ async function recordCustomGif(durationSec, isTransparent, fillBgColor) {
 
   const framesRgba = [];
 
-  for (let i = 0; i < totalFrames; i++) {
-    const elapsed = ((i + 1) / fps).toFixed(1);
-    showBusy(`GIF 프레임 촬영 중… (${elapsed}초 / ${durationSec.toFixed(1)}초)`);
+  try {
+    renderer.setPixelRatio(1);
+    renderer.setSize(gw, gh, false);
+    camera.aspect = 1.0;
+    camera.updateProjectionMatrix();
 
-    renderer.render(scene, camera);
+    for (let i = 0; i < totalFrames; i++) {
+      const elapsed = ((i + 1) / fps).toFixed(1);
+      showBusy(`GIF 프레임 촬영 중… (${elapsed}초 / ${durationSec.toFixed(1)}초)`);
 
-    if (isTransparent) {
-      offCtx.clearRect(0, 0, gw, gh);
-    } else {
-      offCtx.fillStyle = fillBgColor;
-      offCtx.fillRect(0, 0, gw, gh);
+      // 첫 프레임 이후 프레임마다 정해진 델타 타임(1/fps)만큼 정확히 모션 진행
+      if (i > 0) {
+        updateSceneAnimation(stepDt);
+      }
+
+      renderer.render(scene, camera);
+
+      if (isTransparent) {
+        offCtx.clearRect(0, 0, gw, gh);
+      } else {
+        offCtx.fillStyle = fillBgColor;
+        offCtx.fillRect(0, 0, gw, gh);
+      }
+      offCtx.drawImage(canvas, 0, 0, gw, gh);
+
+      const imgData = offCtx.getImageData(0, 0, gw, gh);
+      framesRgba.push(new Uint8ClampedArray(imgData.data));
+
+      // UI 반응성 유지 및 브라우저 이벤트 루프 양보
+      await new Promise((r) => requestAnimationFrame(r));
     }
-    offCtx.drawImage(canvas, 0, 0, gw, gh);
 
-    const imgData = offCtx.getImageData(0, 0, gw, gh);
-    framesRgba.push(new Uint8ClampedArray(imgData.data));
+    showBusy('GIF 움짤 파일 인코딩 중… 잠시만 기다려주세요');
+    await new Promise((r) => setTimeout(r, 60));
 
-    await new Promise((r) => setTimeout(r, delayCs * 10));
+    const gifBlob = encodeGif89a(framesRgba, gw, gh, delayCs, isTransparent);
+    triggerDownload(gifBlob, `${getExportFilePrefix()}_motion_${Date.now()}.gif`);
+  } finally {
+    isGifRecordingNow = false;
+    renderer.setPixelRatio(prevPixelRatio);
+    renderer.setSize(prevSize.x, prevSize.y, false);
+    camera.aspect = prevAspect;
+    camera.updateProjectionMatrix();
+    clock.getDelta(); // 애니메이션 루프 재개 시 누적 델타 방지
+    renderer.render(scene, camera);
   }
-
-  showBusy('GIF 움짤 파일 인코딩 중… 잠시만 기다려주세요');
-  await new Promise((r) => setTimeout(r, 30));
-
-  const gifBlob = encodeGif89a(framesRgba, gw, gh, delayCs, isTransparent);
-  triggerDownload(gifBlob, `${getExportFilePrefix()}_motion_${Date.now()}.gif`);
 }
 
 async function recordCustomWebm(durationSec) {
@@ -2417,16 +2449,7 @@ function hideBusy() {
   if (overlay) overlay.hidden = true;
 }
 
-handleResize();
-initUI();
-rebuildCharacterMesh(false);
-
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.1);
-  controls.update();
-
+function updateSceneAnimation(dt) {
   if (isStudioMode) {
     studioActors.forEach((actor) => {
       let effectiveMode = state.danceMode;
@@ -2446,7 +2469,20 @@ function animate() {
   } else {
     animator.update(dt, state);
   }
+}
 
+handleResize();
+initUI();
+rebuildCharacterMesh(false);
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  if (isGifRecordingNow) return; // GIF 녹화 중 메인 렌더 루프와의 버퍼 충돌 방지
+
+  const dt = Math.min(clock.getDelta(), 0.1);
+  controls.update();
+  updateSceneAnimation(dt);
   renderer.render(scene, camera);
 }
 animate();

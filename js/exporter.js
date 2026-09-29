@@ -633,28 +633,43 @@ export async function importCharacterFile(file) {
 }
 
 // ============================================================================
-// 순수 JS 고속 GIF89a 인코더 (Median-Cut 255색 양자화 + 투명 배경 지원 + LZW 압축)
+// 순수 JS 고품질 GIF89a 인코더 (통합 글로벌 팔레트 + 무깜빡임 보정 + LZW 압축)
 // ============================================================================
-function buildMedianCutPalette(rgba, isTransparent) {
+const SHARED_LZW_TABLE = new Int32Array(4096 * 256);
+
+function buildUnifiedGlobalPalette(framesRgba, isTransparent) {
   // 15-bit RGB 히스토그램 (32 x 32 x 32 = 32768 버킷)
   const histCount = new Int32Array(32768);
   const histR = new Int32Array(32768);
   const histG = new Int32Array(32768);
   const histB = new Int32Array(32768);
 
-  const totalPixels = rgba.length >> 2;
-  for (let i = 0; i < totalPixels; i++) {
-    const idx = i << 2;
-    const a = rgba[idx + 3];
-    if (isTransparent && a < 128) continue;
-    const r = rgba[idx];
-    const g = rgba[idx + 1];
-    const b = rgba[idx + 2];
-    const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-    histCount[key]++;
-    histR[key] += r;
-    histG[key] += g;
-    histB[key] += b;
+  const numFrames = framesRgba.length;
+  // 전체 애니메이션 프레임 중 최대 30프레임을 균등 샘플링하여 전 구간의 색상과 조명을 수집
+  const step = Math.max(1, Math.floor(numFrames / 30));
+
+  for (let f = 0; f < numFrames; f += step) {
+    const rgba = framesRgba[f];
+    const totalPixels = rgba.length >> 2;
+    for (let i = 0; i < totalPixels; i++) {
+      const idx = i << 2;
+      const a = rgba[idx + 3];
+      if (isTransparent && a < 80) continue;
+      let r = rgba[idx];
+      let g = rgba[idx + 1];
+      let b = rgba[idx + 2];
+      // 투명 배경 시 안티에일리어싱으로 어두워진(Pre-multiplied) 테두리 픽셀 색상 복원
+      if (isTransparent && a < 254 && a > 0) {
+        r = Math.min(255, Math.round((r * 255) / a));
+        g = Math.min(255, Math.round((g * 255) / a));
+        b = Math.min(255, Math.round((b * 255) / a));
+      }
+      const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+      histCount[key]++;
+      histR[key] += r;
+      histG[key] += g;
+      histB[key] += b;
+    }
   }
 
   const activeCells = [];
@@ -664,6 +679,9 @@ function buildMedianCutPalette(rgba, isTransparent) {
 
   const palette = new Uint8Array(256 * 3);
   const lut = new Uint8Array(32768);
+  lut.fill(255); // 255는 미할당 또는 투명 인덱스 마킹
+
+  const maxColors = isTransparent ? 255 : 256;
 
   if (activeCells.length === 0) {
     return { palette, lut };
@@ -689,7 +707,6 @@ function buildMedianCutPalette(rgba, isTransparent) {
   };
 
   const boxes = [makeBox(activeCells)];
-  const maxColors = 255; // 255번 인덱스는 투명색 예약
 
   while (boxes.length < maxColors) {
     let bestIdx = -1;
@@ -736,7 +753,10 @@ function buildMedianCutPalette(rgba, isTransparent) {
     boxes.splice(bestIdx, 1, makeBox(leftCells), makeBox(rightCells));
   }
 
-  for (let i = 0; i < boxes.length; i++) {
+  const assigned = new Uint8Array(32768);
+
+  const numColors = Math.min(boxes.length, maxColors);
+  for (let i = 0; i < numColors; i++) {
     const bx = boxes[i];
     let sumR = 0, sumG = 0, sumB = 0, total = 0;
     for (let j = 0; j < bx.cells.length; j++) {
@@ -746,11 +766,48 @@ function buildMedianCutPalette(rgba, isTransparent) {
       sumB += histB[c];
       total += histCount[c];
       lut[c] = i;
+      assigned[c] = 1;
     }
     if (total > 0) {
       palette[i * 3] = Math.round(sumR / total);
       palette[i * 3 + 1] = Math.round(sumG / total);
       palette[i * 3 + 2] = Math.round(sumB / total);
+    }
+  }
+
+  if (isTransparent) {
+    palette[255 * 3] = 0;
+    palette[255 * 3 + 1] = 0;
+    palette[255 * 3 + 2] = 0;
+  }
+
+  // 15비트 색 공간(32768개) 중 샘플에 잡히지 않은 모든 미할당 색상을 인간 시각 가중치 유클리드 거리로 가장 가까운 팔레트 색에 매핑
+  // -> 특정 프레임에서 색이 날아가거나 엉뚱한 색(0번)으로 떨어지는 현상 완벽 방지
+  const findNearestColor = (r, g, b) => {
+    let bestDist = Infinity;
+    let bestIdx = 0;
+    for (let i = 0; i < numColors; i++) {
+      const pr = palette[i * 3];
+      const pg = palette[i * 3 + 1];
+      const pb = palette[i * 3 + 2];
+      const dr = r - pr;
+      const dg = g - pg;
+      const db = b - pb;
+      const dist = dr * dr * 0.299 + dg * dg * 0.587 + db * db * 0.114;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  };
+
+  for (let k = 0; k < 32768; k++) {
+    if (!assigned[k]) {
+      const r = ((k >> 10) & 31) << 3;
+      const g = ((k >> 5) & 31) << 3;
+      const b = (k & 31) << 3;
+      lut[k] = findNearestColor(r, g, b);
     }
   }
 
@@ -789,8 +846,8 @@ function lzwEncodeFrame(indexedPixels) {
     }
   };
 
-  // 4096 엔트리 * 256 문자 해시 테이블
-  const table = new Int32Array(4096 * 256);
+  // 재할당 없는 고정 해시 테이블로 고속 LZW 압축 수행
+  const table = SHARED_LZW_TABLE;
   table.fill(-1);
 
   let nextCode = 258;
@@ -842,22 +899,23 @@ export function encodeGif89a(framesRgba, width, height, delayCs = 5, isTranspare
   const chunks = [];
   const pushBytes = (...arr) => chunks.push(new Uint8Array(arr));
 
-  // First frame palette for Global Color Table
-  const firstQuant = buildMedianCutPalette(framesRgba[0], isTransparent);
+  // 전체 프레임을 아우르는 단일 고화질 글로벌 팔레트 생성 (프레임별 팔레트 교체로 인한 깜빡임/깨짐 원천 차단)
+  const { palette, lut } = buildUnifiedGlobalPalette(framesRgba, isTransparent);
 
-  // Header: GIF89a
+  // 1. Header: GIF89a
   pushBytes(0x47, 0x49, 0x46, 0x38, 0x39, 0x61);
-  // Logical Screen Descriptor
+
+  // 2. Logical Screen Descriptor (글로벌 컬러 테이블 256색 지정)
   pushBytes(
     width & 0xff, (width >> 8) & 0xff,
     height & 0xff, (height >> 8) & 0xff,
     0xf7, // Global Color Table (256 colors)
-    255,  // Background color index
+    isTransparent ? 255 : 0,  // Background color index
     0x00
   );
-  chunks.push(firstQuant.palette);
+  chunks.push(palette);
 
-  // Netscape 2.0 Infinite Loop Extension
+  // 3. Netscape 2.0 Infinite Loop Extension
   pushBytes(
     0x21, 0xff, 0x0b,
     0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30,
@@ -867,50 +925,50 @@ export function encodeGif89a(framesRgba, width, height, delayCs = 5, isTranspare
   const totalPixels = width * height;
   const indexed = new Uint8Array(totalPixels);
 
+  // Graphic Control Extension Flags:
+  // disposal: 2 (restore to background) when transparent, 1 (do not dispose / overwrite) when opaque
+  const gceFlags = isTransparent ? 0x09 : 0x04;
+  const transIndex = isTransparent ? 255 : 0;
+
   for (let f = 0; f < framesRgba.length; f++) {
     const rgba = framesRgba[f];
-    const { palette, lut } = f === 0 ? firstQuant : buildMedianCutPalette(rgba, isTransparent);
 
     for (let i = 0; i < totalPixels; i++) {
       const idx = i << 2;
-      if (isTransparent && rgba[idx + 3] < 128) {
+      const a = rgba[idx + 3];
+      if (isTransparent && a < 80) {
         indexed[i] = 255;
       } else {
-        const key = ((rgba[idx] >> 3) << 10) | ((rgba[idx + 1] >> 3) << 5) | (rgba[idx + 2] >> 3);
+        let r = rgba[idx];
+        let g = rgba[idx + 1];
+        let b = rgba[idx + 2];
+        if (isTransparent && a < 254 && a > 0) {
+          r = Math.min(255, Math.round((r * 255) / a));
+          g = Math.min(255, Math.round((g * 255) / a));
+          b = Math.min(255, Math.round((b * 255) / a));
+        }
+        const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
         indexed[i] = lut[key];
       }
     }
 
     // Graphic Control Extension
-    // disposal: 2 (restore to background) when transparent, 1 (do not dispose) when opaque
-    const gceFlags = isTransparent ? 0x09 : 0x04;
     pushBytes(
       0x21, 0xf9, 0x04,
       gceFlags,
       delayCs & 0xff, (delayCs >> 8) & 0xff,
-      255, // transparent color index
+      transIndex,
       0x00
     );
 
-    // Image Descriptor (with Local Color Table for frames > 0)
-    if (f === 0) {
-      pushBytes(
-        0x2c,
-        0x00, 0x00, 0x00, 0x00,
-        width & 0xff, (width >> 8) & 0xff,
-        height & 0xff, (height >> 8) & 0xff,
-        0x00
-      );
-    } else {
-      pushBytes(
-        0x2c,
-        0x00, 0x00, 0x00, 0x00,
-        width & 0xff, (width >> 8) & 0xff,
-        height & 0xff, (height >> 8) & 0xff,
-        0x87 // Local Color Table (256 colors)
-      );
-      chunks.push(palette);
-    }
+    // Image Descriptor (모든 프레임이 글로벌 컬러 테이블을 공통 사용하여 깜빡임 방지)
+    pushBytes(
+      0x2c,
+      0x00, 0x00, 0x00, 0x00,
+      width & 0xff, (width >> 8) & 0xff,
+      height & 0xff, (height >> 8) & 0xff,
+      0x00 // No Local Color Table!
+    );
 
     chunks.push(lzwEncodeFrame(indexed));
   }
