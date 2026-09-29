@@ -1,6 +1,6 @@
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=20';
+import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=21';
 
 // 동적 바이너리 버퍼 작성기 (PMX 2.0 생성용)
 class BinaryWriter {
@@ -725,8 +725,8 @@ function buildUnifiedGlobalPalette(framesRgba, isTransparent) {
       if (bx.cells.length < 2) continue;
       const span = Math.max(bx.rMax - bx.rMin, bx.gMax - bx.gMin, bx.bMax - bx.bMin);
       if (span === 0) continue;
-      // 색 공간 대비 폭(span)에 우선순위를 부여하여 외곽선 경계 안티에일리어싱 음영 보존
-      const score = span * Math.pow(bx.count, 0.12);
+      // 색 공간 대비 폭(span)과 픽셀 빈도(count)를 이상적으로 조율하여 외곽선과 캐릭터 피부톤 모두 완벽 보존
+      const score = span * Math.pow(bx.count, 0.28);
       if (score > bestScore) {
         bestScore = score;
         bestIdx = i;
@@ -940,98 +940,29 @@ export function encodeGif89a(framesRgba, width, height, delayCs = 5, isTranspare
   const gceFlags = isTransparent ? 0x09 : 0x04;
   const transIndex = isTransparent ? 255 : 0;
 
-  // 부드러운 안티에일리어싱 외곽선 및 그라데이션 보존을 위한 Floyd-Steinberg 오차 확산 버퍼
-  const currErrR = new Int16Array(width + 2);
-  const currErrG = new Int16Array(width + 2);
-  const currErrB = new Int16Array(width + 2);
-  const nextErrR = new Int16Array(width + 2);
-  const nextErrG = new Int16Array(width + 2);
-  const nextErrB = new Int16Array(width + 2);
-
   for (let f = 0; f < framesRgba.length; f++) {
     const rgba = framesRgba[f];
-    currErrR.fill(0);
-    currErrG.fill(0);
-    currErrB.fill(0);
-    nextErrR.fill(0);
-    nextErrG.fill(0);
-    nextErrB.fill(0);
 
-    let pIdx = 0;
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = pIdx << 2;
-        const a = rgba[idx + 3];
+    for (let i = 0; i < totalPixels; i++) {
+      const idx = i << 2;
+      const a = rgba[idx + 3];
 
-        if (isTransparent && a < 80) {
-          indexed[pIdx] = 255;
-        } else {
-          let r = rgba[idx];
-          let g = rgba[idx + 1];
-          let b = rgba[idx + 2];
+      if (isTransparent && a < 80) {
+        indexed[i] = 255;
+      } else {
+        let r = rgba[idx];
+        let g = rgba[idx + 1];
+        let b = rgba[idx + 2];
 
-          if (isTransparent && a < 254 && a > 0) {
-            r = Math.min(255, Math.round((r * 255) / a));
-            g = Math.min(255, Math.round((g * 255) / a));
-            b = Math.min(255, Math.round((b * 255) / a));
-          }
-
-          const bufX = x + 1;
-          const qr = Math.max(0, Math.min(255, r + currErrR[bufX]));
-          const qg = Math.max(0, Math.min(255, g + currErrG[bufX]));
-          const qb = Math.max(0, Math.min(255, b + currErrB[bufX]));
-
-          const key = ((qr >> 3) << 10) | ((qg >> 3) << 5) | (qb >> 3);
-          const cIdx = lut[key];
-          indexed[pIdx] = cIdx;
-
-          const pr = palette[cIdx * 3];
-          const pg = palette[cIdx * 3 + 1];
-          const pb = palette[cIdx * 3 + 2];
-
-          // 과도한 노이즈 방지를 위해 오차 확산 강도를 부드럽게 제한 (Floyd-Steinberg)
-          const er = Math.max(-28, Math.min(28, qr - pr));
-          const eg = Math.max(-28, Math.min(28, qg - pg));
-          const eb = Math.max(-28, Math.min(28, qb - pb));
-
-          const er7 = (er * 7) >> 4;
-          const er3 = (er * 3) >> 4;
-          const er5 = (er * 5) >> 4;
-          const er1 = (er * 1) >> 4;
-
-          const eg7 = (eg * 7) >> 4;
-          const eg3 = (eg * 3) >> 4;
-          const eg5 = (eg * 5) >> 4;
-          const eg1 = (eg * 1) >> 4;
-
-          const eb7 = (eb * 7) >> 4;
-          const eb3 = (eb * 3) >> 4;
-          const eb5 = (eb * 5) >> 4;
-          const eb1 = (eb * 1) >> 4;
-
-          currErrR[bufX + 1] += er7;
-          nextErrR[bufX - 1] += er3;
-          nextErrR[bufX]     += er5;
-          nextErrR[bufX + 1] += er1;
-
-          currErrG[bufX + 1] += eg7;
-          nextErrG[bufX - 1] += eg3;
-          nextErrG[bufX]     += eg5;
-          nextErrG[bufX + 1] += eg1;
-
-          currErrB[bufX + 1] += eb7;
-          nextErrB[bufX - 1] += eb3;
-          nextErrB[bufX]     += eb5;
-          nextErrB[bufX + 1] += eb1;
+        if (isTransparent && a < 254 && a > 0) {
+          r = Math.min(255, Math.round((r * 255) / a));
+          g = Math.min(255, Math.round((g * 255) / a));
+          b = Math.min(255, Math.round((b * 255) / a));
         }
-        pIdx++;
+
+        const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        indexed[i] = lut[key];
       }
-      currErrR.set(nextErrR);
-      currErrG.set(nextErrG);
-      currErrB.set(nextErrB);
-      nextErrR.fill(0);
-      nextErrG.fill(0);
-      nextErrB.fill(0);
     }
 
     // Graphic Control Extension
