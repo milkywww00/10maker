@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
   <script type="importmap">
     {
       "imports": {
@@ -268,6 +268,14 @@
 
           <div class="section-block">
             <div class="section-head">
+              <h2>외곽선 선 색상</h2>
+              <input type="color" id="pickerOutlineColor2" class="color-box" value="#18181b" title="외곽선 선 색상" />
+            </div>
+            <div class="swatch-list" id="paletteOutline"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
               <h2>얼굴 무늬 &amp; 부위별 색상</h2>
               <input type="color" id="pickerPatternColor" class="color-box" value="#d4c4b4" title="무늬 색상" />
             </div>
@@ -388,6 +396,7 @@
                 <input type="checkbox" id="chkOutline" checked />
                 <span>외곽선(잉크 라인) 표시</span>
               </label>
+              <input type="color" id="pickerOutlineColor" class="color-box" value="#18181b" title="외곽선 선 색상" />
             </div>
             <div class="slider-item" style="margin-top: 8px;">
               <label for="sliderOutline">외곽선 두께</label>
@@ -587,6 +596,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=19"></script>
+  <script type="module" src="js/app.js?v=20"></script>
 </body>
 </html>

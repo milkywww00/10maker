@@ -47,6 +47,7 @@ export const DEFAULT_STATE = {
   polyDetail: 'low',
   outlineEnabled: true,
   outlineThickness: 0.032,
+  outlineColor: '#18181b',
   headScale: 1.0,
   bodyChubby: 1.0,
   legLength: 1.0,
@@ -192,5 +193,11 @@ export const COLOR_PALETTES = {
   accent: [
     '#ff5e7e', '#ff85a1', '#ff9f1c', '#ffbf69', '#2ec4b6',
     '#3a86ff', '#8338ec', '#ef233c', '#52b788', '#18181b'
+  ],
+  outline: [
+    '#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a',
+    '#451a03', '#78350f', '#8d6e63', '#831843', '#7f1d1d',
+    '#1e1b4b', '#172554', '#3b0764', '#022c22', '#166534',
+    '#ef476f', '#f43f5e', '#a855f7', '#3b82f6', '#ffffff'
   ]
 };

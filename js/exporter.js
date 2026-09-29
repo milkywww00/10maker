@@ -1,6 +1,6 @@
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=19';
+import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=20';
 
 // 동적 바이너리 버퍼 작성기 (PMX 2.0 생성용)
 class BinaryWriter {
@@ -307,9 +307,10 @@ export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '') 
   // Flag (양면 + 그림자 + 엣지)
   writer.writeUint8(0x1f);
   // Edge Color RGBA + Size
-  writer.writeFloat32(0.12);
-  writer.writeFloat32(0.10);
-  writer.writeFloat32(0.12);
+  const edgeColor = new THREE.Color(state?.outlineColor || 0x141416);
+  writer.writeFloat32(edgeColor.r);
+  writer.writeFloat32(edgeColor.g);
+  writer.writeFloat32(edgeColor.b);
   writer.writeFloat32(1.0);
   writer.writeFloat32(0.75);
   // Texture Index

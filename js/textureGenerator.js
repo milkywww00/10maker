@@ -235,7 +235,7 @@ export class TextureGenerator {
       ctx.lineWidth = Math.max(1.0, (outThick / 0.032) * 14.0);
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#18181b';
+      ctx.strokeStyle = state.outlineColor || '#18181b';
       ctx.stroke();
     }
 
@@ -526,7 +526,7 @@ export class TextureGenerator {
       ctx.fillStyle = '#f6c8af';
       ctx.fill();
       ctx.lineWidth = olW;
-      ctx.strokeStyle = '#18181b';
+      ctx.strokeStyle = state.outlineColor || '#18181b';
       ctx.stroke();
 
       // 중앙 거즈 패드
@@ -940,7 +940,7 @@ export class TextureGenerator {
       belly: state.bellyPatch ? (state.bellyColor || '#fff5eb') : (state.bodyColor || '#ffffff'),
       antler: state.antlerColor || '#c69c6d',
       accessory: state.accessoryColor || '#ff5e7e',
-      dark: '#18181b',
+      dark: state.outlineColor || '#18181b',
       sprout: '#52b788',
       gold: '#ffd166',
       earOuter: state.patternType === 'two_tone'

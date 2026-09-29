@@ -13,10 +13,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=19';
-import { TextureGenerator } from './textureGenerator.js?v=19';
-import { CharacterBuilder } from './characterBuilder.js?v=19';
-import { CharacterAnimator } from './animator.js?v=19';
+} from './config.js?v=20';
+import { TextureGenerator } from './textureGenerator.js?v=20';
+import { CharacterBuilder } from './characterBuilder.js?v=20';
+import { CharacterAnimator } from './animator.js?v=20';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -25,7 +25,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=19';
+} from './exporter.js?v=20';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -1433,15 +1433,27 @@ function initUI() {
   initScarControls();
 
   // 컬러 팔레트
+  const updateOutlineColor = (col) => {
+    state.outlineColor = col;
+    if (currentCharacter?.outlineMesh) {
+      currentCharacter.outlineMesh.material.color.set(col);
+    }
+    syncUIFromState();
+    refreshTextureOnly();
+  };
+
   buildColorPalette('paletteBody', COLOR_PALETTES.body, 'bodyColor');
   buildColorPalette('paletteInnerEar', COLOR_PALETTES.innerEar, 'innerEarColor');
   buildColorPalette('paletteEye', COLOR_PALETTES.eye, 'eyeColor');
+  buildColorPalette('paletteOutline', COLOR_PALETTES.outline, 'outlineColor', updateOutlineColor);
   buildColorPalette('paletteAccessory', COLOR_PALETTES.accent, 'accessoryColor');
 
   bindColorInput('pickerBodyColor', 'bodyColor');
   bindColorInput('pickerInnerEarColor', 'innerEarColor');
   bindColorInput('pickerEyeColor', 'eyeColor');
   bindColorInput('pickerNoseColor', 'noseMouthColor');
+  bindColorInput('pickerOutlineColor', 'outlineColor', updateOutlineColor);
+  bindColorInput('pickerOutlineColor2', 'outlineColor', updateOutlineColor);
   bindColorInput('pickerPatternColor', 'patternColor');
   bindColorInput('pickerBellyColor', 'bellyColor');
   bindColorInput('pickerAntlerColor', 'antlerColor');
@@ -2024,8 +2036,10 @@ function renderScarList() {
   });
 }
 
-function buildColorPalette(containerId, colors, stateKey) {
+function buildColorPalette(containerId, colors, stateKey, onCustomChange) {
   const container = document.getElementById(containerId);
+  if (!container || !Array.isArray(colors)) return;
+  container.innerHTML = '';
   colors.forEach((hex) => {
     const sw = document.createElement('button');
     sw.type = 'button';
@@ -2035,19 +2049,27 @@ function buildColorPalette(containerId, colors, stateKey) {
     sw.addEventListener('click', () => {
       state[stateKey] = hex;
       syncUIFromState();
-      refreshTextureOnly();
+      if (onCustomChange) {
+        onCustomChange(hex);
+      } else {
+        refreshTextureOnly();
+      }
     });
     container.appendChild(sw);
   });
 }
 
-function bindColorInput(inputId, stateKey) {
+function bindColorInput(inputId, stateKey, onCustomChange) {
   const el = document.getElementById(inputId);
   if (!el) return;
   el.addEventListener('input', (e) => {
     state[stateKey] = e.target.value;
     syncUIFromState();
-    refreshTextureOnly();
+    if (onCustomChange) {
+      onCustomChange(e.target.value);
+    } else {
+      refreshTextureOnly();
+    }
   });
 }
 
@@ -2131,6 +2153,8 @@ function syncUIFromState() {
   setVal('pickerScarColor', state.scarColor || '#b55d60');
   setVal('pickerAccessoryColor', state.accessoryColor);
   setVal('colorTailTip', state.tailTipColor);
+  setVal('pickerOutlineColor', state.outlineColor || '#18181b');
+  setVal('pickerOutlineColor2', state.outlineColor || '#18181b');
 
   const setSlider = (sliderId, valId, v, fmt) => {
     const s = document.getElementById(sliderId);
