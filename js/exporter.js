@@ -1,6 +1,7 @@
+import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=22';
+import { BONE_DEFS, BONE_INDEX } from './characterBuilder.js?v=23';
 
 // 동적 바이너리 버퍼 작성기 (PMX 2.0 생성용)
 class BinaryWriter {
@@ -176,7 +177,7 @@ function createZipArchive(files) {
 }
 
 // MMD PMX 2.0 바이너리 데이터 생성
-export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '') {
+export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '', state = null) {
   const geo = skinnedMesh.geometry;
   const posAttr = geo.attributes.position;
   const normAttr = geo.attributes.normal;
@@ -307,10 +308,22 @@ export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '') 
   // Flag (양면 + 그림자 + 엣지)
   writer.writeUint8(0x1f);
   // Edge Color RGBA + Size
-  const edgeColor = new THREE.Color(state?.outlineColor || 0x141416);
-  writer.writeFloat32(edgeColor.r);
-  writer.writeFloat32(edgeColor.g);
-  writer.writeFloat32(edgeColor.b);
+  let edgeR = 0x14 / 255;
+  let edgeG = 0x14 / 255;
+  let edgeB = 0x16 / 255;
+  if (state?.outlineColor !== undefined) {
+    try {
+      const edgeColor = new THREE.Color(state.outlineColor);
+      edgeR = edgeColor.r;
+      edgeG = edgeColor.g;
+      edgeB = edgeColor.b;
+    } catch (_) {
+      // fallback
+    }
+  }
+  writer.writeFloat32(edgeR);
+  writer.writeFloat32(edgeG);
+  writer.writeFloat32(edgeB);
   writer.writeFloat32(1.0);
   writer.writeFloat32(0.75);
   // Texture Index
@@ -333,7 +346,7 @@ export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '') 
   BONE_DEFS.forEach((def, idx) => {
     writer.writeTextUtf16(def.name);
     writer.writeTextUtf16(def.nameEn);
-    const wp = boneWorldPositions[idx] || def.pos;
+    const wp = (boneWorldPositions && boneWorldPositions[idx]) || def.pos;
     writer.writeFloat32(wp[0] * SCALE);
     writer.writeFloat32(wp[1] * SCALE);
     writer.writeFloat32(-wp[2] * SCALE);
@@ -373,7 +386,7 @@ export function buildPmxBinary(skinnedMesh, boneWorldPositions, modelName = '') 
   ikDefs.forEach((ik) => {
     writer.writeTextUtf16(ik.name);
     writer.writeTextUtf16(ik.nameEn);
-    const wp = boneWorldPositions[ik.targetIdx];
+    const wp = (boneWorldPositions && boneWorldPositions[ik.targetIdx]) || (BONE_DEFS[ik.targetIdx] ? BONE_DEFS[ik.targetIdx].pos : [0, 0, 0]);
     writer.writeFloat32(wp[0] * SCALE);
     writer.writeFloat32(wp[1] * SCALE);
     writer.writeFloat32(-wp[2] * SCALE);
@@ -456,7 +469,7 @@ async function canvasToPngUint8Array(canvas) {
 
 // MMD 패키지 (.zip 안에 character.pmx + texture.png + character.json + 안내문 포함) 다운로드
 export async function exportMmdZip(skinnedMesh, boneWorldPositions, textureCanvas, filename = 'custom_animal_mmd.zip', state = null) {
-  const pmxBytes = buildPmxBinary(skinnedMesh, boneWorldPositions, state?.characterName || '');
+  const pmxBytes = buildPmxBinary(skinnedMesh, boneWorldPositions, state?.characterName || '', state);
   const pngBytes = await canvasToPngUint8Array(textureCanvas);
 
   const readmeText = [
