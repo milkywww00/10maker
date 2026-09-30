@@ -16,6 +16,17 @@ export const DEFAULT_STATE = {
   antlerColor: '#c69c6d',
   accessoryColor: '#ff5e7e',
 
+  // 오드아이 (양 눈 색 다르게)
+  oddEye: false,
+  eyeColorLeft: '#18181b',
+  eyeColorRight: '#3b82f6',
+
+  // 귀 / 팔 개별 색상 설정
+  earColorCustom: false,
+  earColor: '#ffffff',
+  armColorCustom: false,
+  armColor: '#ffffff',
+
   // 파츠 종류
   earType: 'cat',          // 15종
   tailType: 'long',        // 5종
@@ -26,6 +37,7 @@ export const DEFAULT_STATE = {
 
   // 얼굴 무늬 & 점 & 홍조
   patternType: 'none',
+  patterns: [],
   bellyPatch: false,
   blushType: 'comic_circle',
   blushScale: 1.0,

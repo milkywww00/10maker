@@ -1,6 +1,6 @@
 // 10공방 — 3D 캐릭터 빌더 (롭이어·강아지·햄스터·쥐 귀 정밀 복원, 무늬 끊김 0%, 꼬리 끝 잉크라인 보강, 소품·리본 매끈한 조형)
 import * as THREE from 'three';
-import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=23';
+import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=24';
 
 export const BONE_DEFS = [
   { name: '全ての親', nameEn: 'Root', parent: -1 },          // 0
@@ -341,7 +341,7 @@ export class CharacterBuilder {
     const nUv = geo.attributes.uv;
     const bodyUV = getSwatchUV('body');
     const earOuterUV = getSwatchUV('earOuter');
-    const isTwoTone = state.patternType === 'two_tone';
+    const isTwoTone = (Array.isArray(state.patterns) && state.patterns.includes('two_tone')) || state.patternType === 'two_tone';
 
     for (let i = 0; i < nPos.count; i += 3) {
       const dz0 = nPos.getZ(i) / headScale;
@@ -476,7 +476,7 @@ export class CharacterBuilder {
     let geo = new THREE.CapsuleGeometry(armRadius, cylLen, capSegs, radialSegs);
     const pos = geo.attributes.position;
     const uv = geo.attributes.uv;
-    const bodyUV = getSwatchUV('body');
+    const armUV = getSwatchUV('arm');
     const skinIndices = [];
     const skinWeights = [];
 
@@ -493,7 +493,7 @@ export class CharacterBuilder {
 
       const localY = y - cylLen * 0.5;
       pos.setXYZ(i, x * taper, localY, z * taper * 0.82);
-      uv.setXY(i, bodyUV.u, bodyUV.v);
+      uv.setXY(i, armUV.u, armUV.v);
 
       if (t < 0.48) {
         skinIndices.push(armBone, 0, 0, 0);

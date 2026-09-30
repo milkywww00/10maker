@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { BONE_INDEX } from './characterBuilder.js?v=23';
+import { BONE_INDEX } from './characterBuilder.js?v=24';
 
 // FBX (Mixamo / Unity / Unreal / Blender Humanoid) 본 이름 정제
 function cleanFbxBoneName(rawName) {

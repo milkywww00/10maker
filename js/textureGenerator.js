@@ -5,19 +5,20 @@ export const FACE_CENTER_X = 512;
 export const FACE_CENTER_Y = 350;
 export const FACE_PROJ_SCALE = 360;
 
-// 하단 좌측: 파츠별 단색 스와치 영역 (x: 0 ~ 440, y: 740 ~ 1024)
+// 하단 좌측: 파츠별 단색 스와치 영역 (x: 0 ~ 420, y: 740 ~ 1024)
 export const SWATCH_MAP = {
-  body:      { index: 0,  x: 0,   y: 740, w: 40, h: 284 },
-  innerEar:  { index: 1,  x: 40,  y: 740, w: 40, h: 284 },
-  tailTip:   { index: 2,  x: 80,  y: 740, w: 40, h: 284 },
-  belly:     { index: 3,  x: 120, y: 740, w: 40, h: 284 },
-  antler:    { index: 4,  x: 160, y: 740, w: 40, h: 284 },
-  accessory: { index: 5,  x: 200, y: 740, w: 40, h: 284 },
-  dark:      { index: 6,  x: 240, y: 740, w: 40, h: 284 },
-  sprout:    { index: 7,  x: 280, y: 740, w: 40, h: 284 },
-  gold:      { index: 8,  x: 320, y: 740, w: 40, h: 284 },
-  earOuter:  { index: 9,  x: 360, y: 740, w: 40, h: 284 },
-  white:     { index: 10, x: 400, y: 740, w: 40, h: 284 },
+  body:      { index: 0,  x: 0,   y: 740, w: 35, h: 284 },
+  innerEar:  { index: 1,  x: 35,  y: 740, w: 35, h: 284 },
+  tailTip:   { index: 2,  x: 70,  y: 740, w: 35, h: 284 },
+  belly:     { index: 3,  x: 105, y: 740, w: 35, h: 284 },
+  antler:    { index: 4,  x: 140, y: 740, w: 35, h: 284 },
+  accessory: { index: 5,  x: 175, y: 740, w: 35, h: 284 },
+  dark:      { index: 6,  x: 210, y: 740, w: 35, h: 284 },
+  sprout:    { index: 7,  x: 245, y: 740, w: 35, h: 284 },
+  gold:      { index: 8,  x: 280, y: 740, w: 35, h: 284 },
+  earOuter:  { index: 9,  x: 315, y: 740, w: 35, h: 284 },
+  white:     { index: 10, x: 350, y: 740, w: 35, h: 284 },
+  arm:       { index: 11, x: 385, y: 740, w: 35, h: 284 },
 };
 
 // 하단 중앙: 몸통 배 무늬(Belly Patch) 전용 정면 직교 투영 패치 영역
@@ -164,9 +165,12 @@ export class TextureGenerator {
     ctx.rect(r.x, r.y, r.w, r.h);
     ctx.clip();
 
-    const earBaseColor = state.patternType === 'two_tone'
-      ? (state.patternColor || '#d4c4b4')
-      : (state.bodyColor || '#ffffff');
+    const hasTwoTone = (Array.isArray(state.patterns) && state.patterns.includes('two_tone')) || state.patternType === 'two_tone';
+    const earBaseColor = state.earColorCustom
+      ? (state.earColor || state.bodyColor || '#ffffff')
+      : (hasTwoTone
+          ? (state.patternColor || '#d4c4b4')
+          : (state.bodyColor || '#ffffff'));
     ctx.fillStyle = earBaseColor;
     ctx.fillRect(r.x, r.y, r.w, r.h);
 
@@ -243,79 +247,91 @@ export class TextureGenerator {
   }
 
   drawFacePattern(ctx, state) {
-    const type = state.patternType;
-    if (!type || type === 'none') return;
+    let patterns = [];
+    if (Array.isArray(state.patterns)) {
+      patterns = state.patterns.filter((p) => p && p !== 'none');
+    } else if (state.patternType && state.patternType !== 'none') {
+      patterns = [state.patternType];
+    }
+    if (patterns.length === 0) return;
+
+    // 이마 투톤이 활성화되어 있을 경우 가장 먼저 그려 다른 무늬가 묻히지 않도록 정렬
+    if (patterns.includes('two_tone')) {
+      patterns = ['two_tone', ...patterns.filter((p) => p !== 'two_tone')];
+    }
 
     const { cx, eyeY, eyeSpacing, noseY } = this.getFaceCoords();
     ctx.save();
     ctx.fillStyle = state.patternColor || '#d4c4b4';
     ctx.strokeStyle = state.patternColor || '#d4c4b4';
 
-    if (type === 'tabby') {
-      // 정수리 끝(y=0)부터 이마로 자연스럽게 내려오도록 그려 위쪽에서 끊기지 않게 함
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 22;
-      ctx.beginPath();
-      ctx.moveTo(cx, 60);
-      ctx.lineTo(cx, 240);
-      ctx.stroke();
-
-      ctx.lineWidth = 19;
-      [-64, 64].forEach((dx) => {
+    patterns.forEach((type) => {
+      if (type === 'tabby') {
+        // 정수리 끝(y=0)부터 이마로 자연스럽게 내려오도록 그려 위쪽에서 끊기지 않게 함
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 22;
         ctx.beginPath();
-        ctx.moveTo(cx + dx * 0.82, 75);
-        ctx.lineTo(cx + dx, 224);
+        ctx.moveTo(cx, 60);
+        ctx.lineTo(cx, 240);
         ctx.stroke();
-      });
-    } else if (type === 'cheek_stripes') {
-      // 볼 바깥쪽 외곽선까지 충분히 뻗어나가 중간에 애매하게 끊기지 않게 함
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 16;
-      [-1, 1].forEach((dir) => {
-        for (let i = 0; i < 2; i++) {
-          const sy = eyeY + 6 + i * 32;
-          const sx = cx + dir * (eyeSpacing + 66);
+
+        ctx.lineWidth = 19;
+        [-64, 64].forEach((dx) => {
           ctx.beginPath();
-          ctx.moveTo(sx, sy);
-          ctx.lineTo(cx + dir * 350, sy + 8);
+          ctx.moveTo(cx + dx * 0.82, 75);
+          ctx.lineTo(cx + dx, 224);
           ctx.stroke();
-        }
-      });
-    } else if (type === 'spots') {
-      const spots = [
-        { x: cx - 155, y: 235, rx: 48, ry: 36, rot: -0.25 },
-        { x: cx - 82, y: 195, rx: 28, ry: 22, rot: 0.2 },
-        { x: cx + 145, y: 245, rx: 42, ry: 32, rot: 0.35 },
-        { x: cx - 225, y: eyeY + 24, rx: 34, ry: 25, rot: 0.1 },
-        { x: cx + 220, y: eyeY + 18, rx: 36, ry: 26, rot: -0.2 },
-      ];
-      spots.forEach((s) => {
+        });
+      } else if (type === 'cheek_stripes') {
+        // 볼 바깥쪽 외곽선까지 충분히 뻗어나가 중간에 애매하게 끊기지 않게 함
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 16;
+        [-1, 1].forEach((dir) => {
+          for (let i = 0; i < 2; i++) {
+            const sy = eyeY + 6 + i * 32;
+            const sx = cx + dir * (eyeSpacing + 66);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(cx + dir * 350, sy + 8);
+            ctx.stroke();
+          }
+        });
+      } else if (type === 'spots') {
+        const spots = [
+          { x: cx - 155, y: 235, rx: 48, ry: 36, rot: -0.25 },
+          { x: cx - 82, y: 195, rx: 28, ry: 22, rot: 0.2 },
+          { x: cx + 145, y: 245, rx: 42, ry: 32, rot: 0.35 },
+          { x: cx - 225, y: eyeY + 24, rx: 34, ry: 25, rot: 0.1 },
+          { x: cx + 220, y: eyeY + 18, rx: 36, ry: 26, rot: -0.2 },
+        ];
+        spots.forEach((s) => {
+          ctx.beginPath();
+          ctx.ellipse(s.x, s.y, s.rx, s.ry, s.rot, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else if (type === 'mask_raccoon') {
+        [-1, 1].forEach((dir) => {
+          const ex = cx + dir * eyeSpacing;
+          ctx.beginPath();
+          ctx.ellipse(ex, eyeY + 2, 74, 58, dir * 0.16, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else if (type === 'muzzle') {
         ctx.beginPath();
-        ctx.ellipse(s.x, s.y, s.rx, s.ry, s.rot, 0, Math.PI * 2);
+        ctx.ellipse(cx, noseY + 16, 78, 52, 0, 0, Math.PI * 2);
         ctx.fill();
-      });
-    } else if (type === 'mask_raccoon') {
-      [-1, 1].forEach((dir) => {
-        const ex = cx + dir * eyeSpacing;
+      } else if (type === 'two_tone') {
+        // 캔버스 상단 전체(0~1024)를 덮고 내려와 정수리·양옆 어디에서도 각지게 끊기지 않는 매끈한 곡선 투톤!
         ctx.beginPath();
-        ctx.ellipse(ex, eyeY + 2, 74, 58, dir * 0.16, 0, Math.PI * 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(ATLAS_SIZE, 0);
+        ctx.lineTo(ATLAS_SIZE, 345);
+        ctx.bezierCurveTo(cx + 260, 350, cx + 120, 355, cx, 282);
+        ctx.bezierCurveTo(cx - 120, 355, cx - 260, 350, 0, 345);
+        ctx.closePath();
         ctx.fill();
-      });
-    } else if (type === 'muzzle') {
-      ctx.beginPath();
-      ctx.ellipse(cx, noseY + 16, 78, 52, 0, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (type === 'two_tone') {
-      // 캔버스 상단 전체(0~1024)를 덮고 내려와 정수리·양옆 어디에서도 각지게 끊기지 않는 매끈한 곡선 투톤!
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(ATLAS_SIZE, 0);
-      ctx.lineTo(ATLAS_SIZE, 345);
-      ctx.bezierCurveTo(cx + 260, 350, cx + 120, 355, cx, 282);
-      ctx.bezierCurveTo(cx - 120, 355, cx - 260, 350, 0, 345);
-      ctx.closePath();
-      ctx.fill();
-    }
+      }
+    });
 
     ctx.restore();
   }
@@ -731,13 +747,18 @@ export class TextureGenerator {
     const { cx, eyeY, eyeSpacing } = this.getFaceCoords();
     const eyeType = state.eyeType || 'default';
     const lashType = state.eyelashType || 'none';
-    const color = state.eyeColor || '#18181b';
+    const defaultColor = state.eyeColor || '#18181b';
+    const isOdd = Boolean(state.oddEye);
+    const leftColor = isOdd ? (state.eyeColorLeft || defaultColor) : defaultColor;
+    const rightColor = isOdd ? (state.eyeColorRight || '#3b82f6') : defaultColor;
     const extras = Array.isArray(state.extraAccessories) ? state.extraAccessories : [];
 
     [-1, 1].forEach((dir) => {
       if (dir === -1 && (extras.includes('eyepatch_left') || extras.includes('pirate_patch_left'))) return;
       if (dir === 1 && (extras.includes('eyepatch_right') || extras.includes('pirate_patch_right'))) return;
       const ex = cx + dir * eyeSpacing;
+      // dir === -1: 왼쪽 눈(보는 사람 기준 왼쪽), dir === 1: 오른쪽 눈(보는 사람 기준 오른쪽)
+      const color = dir === -1 ? leftColor : rightColor;
       this.drawSingleEye(ctx, ex, eyeY, dir, eyeType, lashType, color, 1.0);
     });
   }
@@ -933,6 +954,7 @@ export class TextureGenerator {
   }
 
   drawColorSwatches(ctx, state) {
+    const hasTwoTone = (Array.isArray(state.patterns) && state.patterns.includes('two_tone')) || state.patternType === 'two_tone';
     const colors = {
       body: state.bodyColor || '#ffffff',
       innerEar: state.innerEarColor || '#ffb5c2',
@@ -943,10 +965,15 @@ export class TextureGenerator {
       dark: state.outlineColor || '#18181b',
       sprout: '#52b788',
       gold: '#ffd166',
-      earOuter: state.patternType === 'two_tone'
-        ? (state.patternColor || '#d4c4b4')
-        : (state.bodyColor || '#ffffff'),
+      earOuter: state.earColorCustom
+        ? (state.earColor || state.bodyColor || '#ffffff')
+        : (hasTwoTone
+            ? (state.patternColor || '#d4c4b4')
+            : (state.bodyColor || '#ffffff')),
       white: '#ffffff',
+      arm: state.armColorCustom
+        ? (state.armColor || state.bodyColor || '#ffffff')
+        : (state.bodyColor || '#ffffff'),
     };
 
     Object.entries(SWATCH_MAP).forEach(([key, rect]) => {

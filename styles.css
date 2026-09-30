@@ -403,6 +403,12 @@ body {
   color: #ffffff;
 }
 
+.chip-btn.chip-sm {
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  border-radius: 6px;
+}
+
 /* 컬러 스와치 */
 .swatch-list {
   display: flex;

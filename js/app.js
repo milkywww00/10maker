@@ -13,10 +13,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=23';
-import { TextureGenerator } from './textureGenerator.js?v=23';
-import { CharacterBuilder } from './characterBuilder.js?v=23';
-import { CharacterAnimator } from './animator.js?v=23';
+} from './config.js?v=24';
+import { TextureGenerator } from './textureGenerator.js?v=24';
+import { CharacterBuilder } from './characterBuilder.js?v=24';
+import { CharacterAnimator } from './animator.js?v=24';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -25,7 +25,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=23';
+} from './exporter.js?v=24';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -47,9 +47,17 @@ function sanitizeCharacterState(raw) {
   if (!Array.isArray(clean.moles)) {
     clean.moles = [];
   }
-  if (!Array.isArray(clean.scars)) {
-    clean.scars = [];
+  if (!Array.isArray(clean.patterns)) {
+    clean.patterns = raw.patternType && raw.patternType !== 'none' ? [raw.patternType] : [];
   }
+  clean.patternType = clean.patterns[0] || 'none';
+  clean.oddEye = Boolean(raw.oddEye);
+  if (!clean.eyeColorLeft) clean.eyeColorLeft = raw.eyeColorLeft || clean.eyeColor || '#18181b';
+  if (!clean.eyeColorRight) clean.eyeColorRight = raw.eyeColorRight || '#3b82f6';
+  clean.earColorCustom = Boolean(raw.earColorCustom);
+  if (!clean.earColor) clean.earColor = raw.earColor || clean.bodyColor || '#ffffff';
+  clean.armColorCustom = Boolean(raw.armColorCustom);
+  if (!clean.armColor) clean.armColor = raw.armColor || clean.bodyColor || '#ffffff';
   return clean;
 }
 
@@ -1421,8 +1429,8 @@ function initUI() {
     mouthGrid.appendChild(card);
   });
 
-  // 무늬, 홍조, 리본(다중), 추가 소품(다중), 모션 칩 그룹
-  buildChipGroup('patternGrid', PATTERN_TYPES, 'patternType', false);
+  // 무늬(다중), 홍조, 리본(다중), 추가 소품(다중), 모션 칩 그룹
+  buildMultiChipGroup('patternGrid', PATTERN_TYPES, 'patterns', false);
   buildChipGroup('blushGrid', BLUSH_TYPES, 'blushType', false);
   buildMultiChipGroup('ribbonGrid', RIBBON_TYPES, 'ribbons', true);
   buildMultiChipGroup('extraAccGrid', EXTRA_ACC_TYPES, 'extraAccessories', true);
@@ -1431,6 +1439,50 @@ function initUI() {
   // 다중 점 & 다중 흉터 추가/삭제 버튼 바인딩
   initMoleControls();
   initScarControls();
+
+  // 오드아이 타겟 관리 (왼쪽 눈 / 오른쪽 눈)
+  let oddEyeTarget = 'left';
+  const setOddEyeTarget = (target) => {
+    oddEyeTarget = target;
+    document.getElementById('btnOddLeft')?.classList.toggle('active', target === 'left');
+    document.getElementById('btnOddRight')?.classList.toggle('active', target === 'right');
+  };
+
+  document.getElementById('btnOddLeft')?.addEventListener('click', () => {
+    setOddEyeTarget('left');
+  });
+
+  document.getElementById('btnOddRight')?.addEventListener('click', () => {
+    setOddEyeTarget('right');
+  });
+
+  document.getElementById('chkOddEye')?.addEventListener('change', (e) => {
+    state.oddEye = e.target.checked;
+    if (state.oddEye) {
+      if (!state.eyeColorLeft) state.eyeColorLeft = state.eyeColor || '#18181b';
+      if (!state.eyeColorRight) state.eyeColorRight = '#3b82f6';
+    }
+    syncUIFromState();
+    refreshTextureOnly();
+  });
+
+  document.getElementById('chkEarColorCustom')?.addEventListener('change', (e) => {
+    state.earColorCustom = e.target.checked;
+    if (state.earColorCustom && !state.earColor) {
+      state.earColor = state.bodyColor || '#ffffff';
+    }
+    syncUIFromState();
+    refreshTextureOnly();
+  });
+
+  document.getElementById('chkArmColorCustom')?.addEventListener('change', (e) => {
+    state.armColorCustom = e.target.checked;
+    if (state.armColorCustom && !state.armColor) {
+      state.armColor = state.bodyColor || '#ffffff';
+    }
+    syncUIFromState();
+    refreshTextureOnly();
+  });
 
   // 컬러 팔레트
   const updateOutlineColor = (col) => {
@@ -1444,13 +1496,29 @@ function initUI() {
 
   buildColorPalette('paletteBody', COLOR_PALETTES.body, 'bodyColor');
   buildColorPalette('paletteInnerEar', COLOR_PALETTES.innerEar, 'innerEarColor');
-  buildColorPalette('paletteEye', COLOR_PALETTES.eye, 'eyeColor');
+  buildColorPalette('paletteEar', COLOR_PALETTES.body, 'earColor');
+  buildColorPalette('paletteArm', COLOR_PALETTES.body, 'armColor');
+  buildColorPalette('paletteEye', COLOR_PALETTES.eye, 'eyeColor', (hex) => {
+    if (state.oddEye) {
+      if (oddEyeTarget === 'right') {
+        state.eyeColorRight = hex;
+      } else {
+        state.eyeColorLeft = hex;
+      }
+    }
+    syncUIFromState();
+    refreshTextureOnly();
+  });
   buildColorPalette('paletteOutline', COLOR_PALETTES.outline, 'outlineColor', updateOutlineColor);
   buildColorPalette('paletteAccessory', COLOR_PALETTES.accent, 'accessoryColor');
 
   bindColorInput('pickerBodyColor', 'bodyColor');
   bindColorInput('pickerInnerEarColor', 'innerEarColor');
+  bindColorInput('pickerEarColor', 'earColor');
+  bindColorInput('pickerArmColor', 'armColor');
   bindColorInput('pickerEyeColor', 'eyeColor');
+  bindColorInput('pickerEyeColorLeft', 'eyeColorLeft');
+  bindColorInput('pickerEyeColorRight', 'eyeColorRight');
   bindColorInput('pickerNoseColor', 'noseMouthColor');
   bindColorInput('pickerOutlineColor', 'outlineColor', updateOutlineColor);
   bindColorInput('pickerOutlineColor2', 'outlineColor', updateOutlineColor);
@@ -1736,6 +1804,7 @@ function buildMultiChipGroup(containerId, items, stateArrayKey, needsGeometryReb
     btn.dataset.id = item.id;
     btn.textContent = item.name;
     btn.addEventListener('click', () => {
+      const hadTwoTone = stateArrayKey === 'patterns' && Boolean(state.patterns?.includes('two_tone'));
       if (!Array.isArray(state[stateArrayKey])) {
         state[stateArrayKey] = [];
       }
@@ -1749,8 +1818,12 @@ function buildMultiChipGroup(containerId, items, stateArrayKey, needsGeometryReb
           state[stateArrayKey].push(item.id);
         }
       }
+      if (stateArrayKey === 'patterns') {
+        state.patternType = state.patterns[0] || 'none';
+      }
       syncUIFromState();
-      if (needsGeometryRebuild) {
+      const hasTwoTone = stateArrayKey === 'patterns' && Boolean(state.patterns?.includes('two_tone'));
+      if (needsGeometryRebuild || (stateArrayKey === 'patterns' && hadTwoTone !== hasTwoTone)) {
         rebuildCharacterMesh(true);
       } else {
         refreshTextureOnly();
@@ -2127,7 +2200,7 @@ function syncUIFromState() {
   markActive('#eyeGrid .part-card', state.eyeType);
   markActive('#eyelashGrid .chip-btn', state.eyelashType);
   markActive('#mouthGrid .part-card', state.mouthType);
-  markActive('#patternGrid .chip-btn', state.patternType);
+  markMultiActive('#patternGrid .chip-btn', state.patterns);
   markActive('#blushGrid .chip-btn', state.blushType);
   markMultiActive('#ribbonGrid .chip-btn', state.ribbons);
   markMultiActive('#extraAccGrid .chip-btn', state.extraAccessories);
@@ -2144,7 +2217,11 @@ function syncUIFromState() {
   setVal('inputCharacterName', state.characterName || '');
   setVal('pickerBodyColor', state.bodyColor);
   setVal('pickerInnerEarColor', state.innerEarColor);
+  setVal('pickerEarColor', state.earColor || state.bodyColor);
+  setVal('pickerArmColor', state.armColor || state.bodyColor);
   setVal('pickerEyeColor', state.eyeColor);
+  setVal('pickerEyeColorLeft', state.eyeColorLeft || state.eyeColor);
+  setVal('pickerEyeColorRight', state.eyeColorRight || '#3b82f6');
   setVal('pickerNoseColor', state.noseMouthColor);
   setVal('pickerPatternColor', state.patternColor);
   setVal('pickerBellyColor', state.bellyColor);
@@ -2155,6 +2232,28 @@ function syncUIFromState() {
   setVal('colorTailTip', state.tailTipColor);
   setVal('pickerOutlineColor', state.outlineColor || '#18181b');
   setVal('pickerOutlineColor2', state.outlineColor || '#18181b');
+
+  // 오드아이 체크박스 및 피커 가시성
+  const chkOddEye = document.getElementById('chkOddEye');
+  if (chkOddEye) chkOddEye.checked = Boolean(state.oddEye);
+  const oddEyeBox = document.getElementById('oddEyePickers');
+  if (oddEyeBox) oddEyeBox.style.display = state.oddEye ? 'inline-flex' : 'none';
+
+  // 귀 바탕 커스텀 색상
+  const chkEarColorCustom = document.getElementById('chkEarColorCustom');
+  if (chkEarColorCustom) chkEarColorCustom.checked = Boolean(state.earColorCustom);
+  const lblEarColor = document.getElementById('lblEarColor');
+  if (lblEarColor) lblEarColor.style.display = state.earColorCustom ? 'inline-flex' : 'none';
+  const paletteEar = document.getElementById('paletteEar');
+  if (paletteEar) paletteEar.style.display = state.earColorCustom ? 'flex' : 'none';
+
+  // 팔 커스텀 색상
+  const chkArmColorCustom = document.getElementById('chkArmColorCustom');
+  if (chkArmColorCustom) chkArmColorCustom.checked = Boolean(state.armColorCustom);
+  const lblArmColor = document.getElementById('lblArmColor');
+  if (lblArmColor) lblArmColor.style.display = state.armColorCustom ? 'inline-flex' : 'none';
+  const paletteArm = document.getElementById('paletteArm');
+  if (paletteArm) paletteArm.style.display = state.armColorCustom ? 'flex' : 'none';
 
   const setSlider = (sliderId, valId, v, fmt) => {
     const s = document.getElementById(sliderId);
@@ -2199,7 +2298,34 @@ function randomizeCharacter() {
   state.bodyColor = pick(COLOR_PALETTES.body);
   state.innerEarColor = pick(COLOR_PALETTES.innerEar);
   state.eyeColor = pick(COLOR_PALETTES.eye);
-  state.patternType = Math.random() < 0.45 ? 'none' : pick(PATTERN_TYPES).id;
+
+  // 오드아이 랜덤
+  const isOddEye = Math.random() < 0.22;
+  state.oddEye = isOddEye;
+  state.eyeColorLeft = state.eyeColor;
+  state.eyeColorRight = isOddEye ? pick(COLOR_PALETTES.eye) : state.eyeColor;
+
+  // 귀 / 팔 커스텀 색상 랜덤
+  state.earColorCustom = Math.random() < 0.25;
+  state.earColor = pick(COLOR_PALETTES.body);
+  state.armColorCustom = Math.random() < 0.25;
+  state.armColor = pick(COLOR_PALETTES.body);
+
+  // 얼굴 무늬 다중 랜덤
+  const patternChoices = PATTERN_TYPES.filter((p) => p.id !== 'none');
+  if (Math.random() < 0.45) {
+    state.patterns = [];
+    state.patternType = 'none';
+  } else {
+    const p1 = pick(patternChoices).id;
+    if (Math.random() < 0.35) {
+      const p2 = pick(patternChoices.filter((p) => p.id !== p1)).id;
+      state.patterns = [p1, p2];
+    } else {
+      state.patterns = [p1];
+    }
+    state.patternType = state.patterns[0];
+  }
   state.patternColor = pick(COLOR_PALETTES.body);
   state.blushType = pick(BLUSH_TYPES).id;
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css?v=23" />
+  <link rel="stylesheet" href="styles.css?v=24" />
   <script type="importmap">
     {
       "imports": {
@@ -249,10 +249,37 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>귀 안쪽 색상</h2>
-              <input type="color" id="pickerInnerEarColor" class="color-box" value="#ffb5c2" />
+              <h2>귀 색상</h2>
+              <div class="inline-pickers">
+                <label>귀 안쪽 <input type="color" id="pickerInnerEarColor" class="color-box" value="#ffb5c2" /></label>
+                <label id="lblEarColor" style="display: none;">귀 바탕 <input type="color" id="pickerEarColor" class="color-box" value="#ffffff" /></label>
+              </div>
             </div>
             <div class="swatch-list" id="paletteInnerEar"></div>
+
+            <div class="option-bar" style="margin-top: 10px;">
+              <label class="check-label">
+                <input type="checkbox" id="chkEarColorCustom" />
+                <span>귀 바탕 색상 따로 지정 (몸 색상과 분리)</span>
+              </label>
+            </div>
+            <div class="swatch-list" id="paletteEar" style="display: none; margin-top: 8px;"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>팔(손) 색상</h2>
+              <div class="inline-pickers">
+                <label id="lblArmColor" style="display: none;">팔 색상 <input type="color" id="pickerArmColor" class="color-box" value="#ffffff" /></label>
+              </div>
+            </div>
+            <div class="option-bar">
+              <label class="check-label">
+                <input type="checkbox" id="chkArmColorCustom" />
+                <span>팔(손) 색상 따로 지정 (양말/장갑 효과)</span>
+              </label>
+            </div>
+            <div class="swatch-list" id="paletteArm" style="display: none; margin-top: 8px;"></div>
           </div>
 
           <div class="section-block">
@@ -264,6 +291,23 @@
               </div>
             </div>
             <div class="swatch-list" id="paletteEye"></div>
+
+            <div class="option-bar" style="margin-top: 10px;">
+              <label class="check-label">
+                <input type="checkbox" id="chkOddEye" />
+                <span>오드아이 (양 눈 색 다르게)</span>
+              </label>
+              <div id="oddEyePickers" class="inline-pickers" style="display: none; align-items: center; gap: 6px;">
+                <button type="button" class="chip-btn chip-sm active" id="btnOddLeft" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; font-size: 0.76rem;">
+                  <span>왼쪽</span>
+                  <input type="color" id="pickerEyeColorLeft" class="color-box" value="#18181b" style="width: 22px; height: 18px; padding: 0; border: none; cursor: pointer;" />
+                </button>
+                <button type="button" class="chip-btn chip-sm" id="btnOddRight" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; font-size: 0.76rem;">
+                  <span>오른쪽</span>
+                  <input type="color" id="pickerEyeColorRight" class="color-box" value="#3b82f6" style="width: 22px; height: 18px; padding: 0; border: none; cursor: pointer;" />
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="section-block">
@@ -276,7 +320,7 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>얼굴 무늬 &amp; 부위별 색상</h2>
+              <h2>얼굴 무늬 &amp; 부위별 색상 (다중 선택 가능)</h2>
               <input type="color" id="pickerPatternColor" class="color-box" value="#d4c4b4" title="무늬 색상" />
             </div>
             <div class="chip-list" id="patternGrid"></div>
@@ -596,6 +640,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=23"></script>
+  <script type="module" src="js/app.js?v=24"></script>
 </body>
 </html>
