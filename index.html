@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css?v=30" />
+  <link rel="stylesheet" href="styles.css?v=31" />
   <script type="importmap">
     {
       "imports": {
@@ -44,6 +44,22 @@
         </svg>
         <span class="label-full">프로젝트 저장</span>
         <span class="label-short">저장</span>
+      </button>
+      <button type="button" id="btnUndo" class="ctrl-btn" title="되돌리기 Ctrl+Z" disabled>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 14 4 9 9 4"></polyline>
+          <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+        </svg>
+        <span class="label-full">되돌리기</span>
+        <span class="label-short">되돌리기</span>
+      </button>
+      <button type="button" id="btnRedo" class="ctrl-btn" title="다시 실행 Ctrl+Y" disabled>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 14 20 9 15 4"></polyline>
+          <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path>
+        </svg>
+        <span class="label-full">다시 실행</span>
+        <span class="label-short">다시 실행</span>
       </button>
       <button type="button" id="btnToggleStudio" class="ctrl-btn studio-toggle-btn" title="다중 캐릭터 배치 및 모션 촬영 스튜디오 모드">
         <span class="label-full">스튜디오 모드</span>
@@ -677,6 +693,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=30"></script>
+  <script type="module" src="js/app.js?v=31"></script>
 </body>
 </html>

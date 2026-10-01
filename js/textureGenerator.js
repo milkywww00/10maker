@@ -1152,7 +1152,7 @@ export class TextureGenerator {
 
         ctx.restore();
       } else if (type === 'wrinkle') {
-        // 4. 주름: 눈을 침범하지 않고 눈과 코 사이 볼 영역에 자연스럽게 위치하는 사선 주름
+        // 4. 주름: 사선 방향을 반대(/ 형태)로 하여 눈가 윤곽을 자연스럽게 감싸도록 변경 (요청 3 반영)
         ctx.save();
         const ex = cx - eyeSpacing;
         const ey = eyeY;
@@ -1160,18 +1160,18 @@ export class TextureGenerator {
         ctx.lineWidth = 6.2 * scale;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        // 눈 테두리(반경 약 32px)를 완전히 벗어나 눈 안쪽/아래 볼 영역에 안착
-        ctx.moveTo(ex + 44 * scale + offsetX, ey + 16 * scale + offsetY);
+        // 눈가 아래쪽(ex+28, ey+36)에서 눈가 오른쪽 위(ex+44, ey+14)로 흐르는 / 형태 곡선
+        ctx.moveTo(ex + 28 * scale + offsetX, ey + 36 * scale + offsetY);
         ctx.quadraticCurveTo(
-          ex + 51 * scale + offsetX, ey + 26 * scale + offsetY,
-          ex + 56 * scale + offsetX, ey + 36 * scale + offsetY
+          ex + 37 * scale + offsetX, ey + 26 * scale + offsetY,
+          ex + 44 * scale + offsetX, ey + 14 * scale + offsetY
         );
         ctx.stroke();
         ctx.restore();
       } else if (type === 'shock') {
         // 5. 놀람: 눈 모양에 맞춰 흰색 영역이 변경되는 처리는 drawEyes에서 100% 통합 처리
       } else if (type === 'anger') {
-        // 6. 화남: 서로 붙지 않고 널찍한 간격으로 분리된 4개의 둥근 빨간색 부메랑 마크
+        // 6. 화남: 간격을 좁혀 더욱 오밀조밀하게 밀착된 4개 부메랑 마크 (요청 2 반영)
         ctx.save();
         const ax = cx + eyeSpacing + 46 + offsetX;
         const ay = eyeY - 78 + offsetY;
@@ -1189,18 +1189,18 @@ export class TextureGenerator {
             ctx.save();
             ctx.rotate((i * Math.PI) / 2);
             ctx.beginPath();
-            // 각 끝점이 인접 부메랑과 겹치지 않도록 충분한 간격을 둔 초승달/부메랑 곡선
-            ctx.moveTo(-13 * scale, -30 * scale);
-            ctx.quadraticCurveTo(0, -19 * scale, 13 * scale, -30 * scale);
+            // 끝점이 뭉쳐지지 않으면서도 서로 긴밀하게 붙어있는 오밀조밀한 부메랑
+            ctx.moveTo(-14.5 * scale, -23.5 * scale);
+            ctx.quadraticCurveTo(0, -13 * scale, 14.5 * scale, -23.5 * scale);
             ctx.stroke();
             ctx.restore();
           }
         };
 
         // 1패스: 도톰한 검은 외곽선
-        drawBoomerangs(12 * scale, '#18181b');
+        drawBoomerangs(9.5 * scale, '#18181b');
         // 2패스: 선명한 빨간색 내부
-        drawBoomerangs(6.5 * scale, '#ef4444');
+        drawBoomerangs(5.5 * scale, '#ef4444');
 
         ctx.restore();
       }

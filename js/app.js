@@ -15,10 +15,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=30';
-import { TextureGenerator } from './textureGenerator.js?v=30';
-import { CharacterBuilder } from './characterBuilder.js?v=30';
-import { CharacterAnimator } from './animator.js?v=30';
+} from './config.js?v=31';
+import { TextureGenerator } from './textureGenerator.js?v=31';
+import { CharacterBuilder } from './characterBuilder.js?v=31';
+import { CharacterAnimator } from './animator.js?v=31';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -27,7 +27,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=30';
+} from './exporter.js?v=31';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -90,6 +90,87 @@ const STORAGE_KEY = '10studio_character_state_v1';
 const RECORD_STORAGE_KEY = '10studio_record_config_v1';
 
 const state = structuredClone(DEFAULT_STATE);
+
+// 실행 취소(Undo) / 다시 실행(Redo) 히스토리 관리
+const undoStack = [];
+const redoStack = [];
+const MAX_HISTORY = 60;
+let isHistoryApplying = false;
+
+function pushHistory() {
+  if (isHistoryApplying) return;
+  const snap = JSON.stringify(state);
+  if (undoStack.length > 0 && undoStack[undoStack.length - 1] === snap) {
+    return;
+  }
+  undoStack.push(snap);
+  if (undoStack.length > MAX_HISTORY) {
+    undoStack.shift();
+  }
+  redoStack.length = 0;
+  updateUndoRedoUI();
+}
+
+function updateUndoRedoUI() {
+  const btnUndo = document.getElementById('btnUndo');
+  const btnRedo = document.getElementById('btnRedo');
+  if (btnUndo) btnUndo.disabled = undoStack.length <= 1;
+  if (btnRedo) btnRedo.disabled = redoStack.length === 0;
+}
+
+function undo() {
+  if (undoStack.length <= 1) return;
+  const current = undoStack.pop();
+  redoStack.push(current);
+  const prev = undoStack[undoStack.length - 1];
+  applyHistorySnapshot(prev);
+  updateUndoRedoUI();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  const next = redoStack.pop();
+  undoStack.push(next);
+  applyHistorySnapshot(next);
+  updateUndoRedoUI();
+}
+
+function applyHistorySnapshot(snapStr) {
+  isHistoryApplying = true;
+  try {
+    const raw = JSON.parse(snapStr);
+    const clean = sanitizeCharacterState(raw);
+    const needsGeom =
+      clean.earType !== state.earType ||
+      clean.tailType !== state.tailType ||
+      clean.lowPolyFlat !== state.lowPolyFlat ||
+      clean.polyDetail !== state.polyDetail ||
+      clean.outlineEnabled !== state.outlineEnabled ||
+      clean.headScale !== state.headScale ||
+      clean.bodyChubby !== state.bodyChubby ||
+      clean.legLength !== state.legLength ||
+      clean.ribbonScale !== state.ribbonScale ||
+      clean.outlineThickness !== state.outlineThickness ||
+      clean.bellyPatch !== state.bellyPatch ||
+      clean.tailTipEnabled !== state.tailTipEnabled ||
+      JSON.stringify(clean.ribbons) !== JSON.stringify(state.ribbons) ||
+      JSON.stringify(clean.extraAccessories) !== JSON.stringify(state.extraAccessories) ||
+      JSON.stringify(clean.patterns) !== JSON.stringify(state.patterns);
+
+    Object.keys(state).forEach((k) => delete state[k]);
+    Object.assign(state, clean);
+
+    syncUIFromState();
+    if (needsGeom) {
+      rebuildCharacterMesh(false);
+    } else {
+      refreshTextureOnly();
+    }
+    schedulePersistState();
+  } finally {
+    isHistoryApplying = false;
+  }
+}
 
 // 녹화 및 배경 설정 상태
 const recordConfig = {
@@ -1041,6 +1122,7 @@ async function handleCharacterFilesImport(fileList, forceAddStudio = false) {
           }
           syncUIFromState();
           rebuildCharacterMesh(true);
+          pushHistory();
         }
       } else if (result.type === 'glb_mesh' || result.type === 'glb_scene') {
         if (!isStudioMode) {
@@ -1364,6 +1446,7 @@ function initUI() {
       state.earType = item.id;
       syncUIFromState();
       rebuildCharacterMesh(true);
+      pushHistory();
     });
     earGrid.appendChild(card);
   });
@@ -1391,6 +1474,7 @@ function initUI() {
       state.tailType = item.id;
       syncUIFromState();
       rebuildCharacterMesh(true);
+      pushHistory();
     });
     tailGrid.appendChild(card);
   });
@@ -1419,6 +1503,7 @@ function initUI() {
       syncUIFromState();
       refreshTextureOnly();
       animator.triggerPoke();
+      pushHistory();
     });
     eyeGrid.appendChild(card);
   });
@@ -1453,6 +1538,7 @@ function initUI() {
       syncUIFromState();
       refreshTextureOnly();
       animator.triggerPoke();
+      pushHistory();
     });
     mouthGrid.appendChild(card);
   });
@@ -1493,6 +1579,7 @@ function initUI() {
     }
     syncUIFromState();
     refreshTextureOnly();
+    pushHistory();
   });
 
   document.getElementById('chkEarColorCustom')?.addEventListener('change', (e) => {
@@ -1502,6 +1589,7 @@ function initUI() {
     }
     syncUIFromState();
     refreshTextureOnly();
+    pushHistory();
   });
 
   document.getElementById('chkArmColorCustom')?.addEventListener('change', (e) => {
@@ -1511,6 +1599,7 @@ function initUI() {
     }
     syncUIFromState();
     refreshTextureOnly();
+    pushHistory();
   });
 
   // 컬러 팔레트
@@ -1537,6 +1626,7 @@ function initUI() {
     }
     syncUIFromState();
     refreshTextureOnly();
+    pushHistory();
   });
   buildColorPalette('paletteOutline', COLOR_PALETTES.outline, 'outlineColor', updateOutlineColor);
   buildColorPalette('paletteAccessory', COLOR_PALETTES.accent, 'accessoryColor');
@@ -1582,6 +1672,7 @@ function initUI() {
       state.polyDetail = btn.dataset.poly;
       syncUIFromState();
       rebuildCharacterMesh(false);
+      pushHistory();
     });
   });
 
@@ -1601,6 +1692,9 @@ function initUI() {
     exportCharacterJson(state, `${getExportFilePrefix()}_project.json`);
   });
 
+  document.getElementById('btnUndo')?.addEventListener('click', undo);
+  document.getElementById('btnRedo')?.addEventListener('click', redo);
+
   document.getElementById('btnToggleStudio')?.addEventListener('click', () => {
     if (!isStudioMode) {
       setStudioMode(true, true);
@@ -1619,7 +1713,10 @@ function initUI() {
   // 배경 & 맞춤 녹화 컨트롤 바인딩
   initRecordAndBgControls();
 
-  document.getElementById('btnRandom').addEventListener('click', randomizeCharacter);
+  document.getElementById('btnRandom').addEventListener('click', () => {
+    randomizeCharacter();
+    pushHistory();
+  });
   document.getElementById('btnResetCharacter').addEventListener('click', () => {
     if (confirm('캐릭터를 처음 기본 상태로 초기화할까요?')) {
       Object.assign(state, structuredClone(DEFAULT_STATE));
@@ -1629,6 +1726,7 @@ function initUI() {
       syncUIFromState();
       rebuildCharacterMesh(true);
       persistStateNow();
+      pushHistory();
     }
   });
 
@@ -1697,6 +1795,32 @@ function initUI() {
   renderStudioActorList();
   syncUIFromState();
   initMediaModal();
+
+  // 실행 취소(되돌리기) / 다시 실행 버튼 및 단축키 바인딩
+  document.getElementById('btnUndo')?.addEventListener('click', undo);
+  document.getElementById('btnRedo')?.addEventListener('click', redo);
+
+  window.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    const isInputText =
+      activeEl &&
+      (activeEl.tagName === 'TEXTAREA' ||
+        (activeEl.tagName === 'INPUT' && (activeEl.type === 'text' || activeEl.type === 'search')));
+    if (isInputText) return;
+
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      undo();
+    } else if (
+      (e.ctrlKey || e.metaKey) &&
+      ((e.key === 'y' || e.key === 'Y') || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))
+    ) {
+      e.preventDefault();
+      redo();
+    }
+  });
+
+  pushHistory();
 }
 
 function initStudioControls() {
@@ -1822,6 +1946,7 @@ function buildChipGroup(containerId, items, stateKey, needsGeometryRebuild, trig
         refreshTextureOnly();
         if (triggerPoke) animator.triggerPoke();
       }
+      pushHistory();
     });
     container.appendChild(btn);
   });
@@ -1861,6 +1986,7 @@ function buildMultiChipGroup(containerId, items, stateArrayKey, needsGeometryReb
       } else {
         refreshTextureOnly();
       }
+      pushHistory();
     });
     container.appendChild(btn);
   });
@@ -1879,6 +2005,7 @@ function initMoleControls() {
     });
     renderMoleList();
     refreshTextureOnly();
+    pushHistory();
   };
 
   document.getElementById('btnAddMole')?.addEventListener('click', () => {
@@ -1899,6 +2026,7 @@ function initMoleControls() {
     state.moles = [];
     renderMoleList();
     refreshTextureOnly();
+    pushHistory();
   });
 }
 
@@ -1939,6 +2067,7 @@ function renderMoleList() {
     mirrorChk.addEventListener('change', (e) => {
       mole.mirror = e.target.checked;
       refreshTextureOnly();
+      pushHistory();
     });
     const mirrorSpan = document.createElement('span');
     mirrorSpan.textContent = '좌우 대칭';
@@ -1952,6 +2081,7 @@ function renderMoleList() {
       state.moles.splice(idx, 1);
       renderMoleList();
       refreshTextureOnly();
+      pushHistory();
     });
 
     rightControls.append(mirrorLabel, removeBtn);
@@ -1976,6 +2106,9 @@ function renderMoleList() {
         valSpan.textContent = num.toFixed(2);
         onChange(num);
         refreshTextureOnly();
+      });
+      input.addEventListener('change', () => {
+        pushHistory();
       });
       row.append(lbl, input, valSpan);
       return row;
@@ -2004,6 +2137,7 @@ function initScarControls() {
     });
     renderScarList();
     refreshTextureOnly();
+    pushHistory();
   };
 
   document.getElementById('btnAddSlashScar')?.addEventListener('click', () => {
@@ -2028,6 +2162,7 @@ function initScarControls() {
     state.scars = [];
     renderScarList();
     refreshTextureOnly();
+    pushHistory();
   });
 }
 
@@ -2075,6 +2210,7 @@ function renderScarList() {
     mirrorChk.addEventListener('change', (e) => {
       scar.mirror = e.target.checked;
       refreshTextureOnly();
+      pushHistory();
     });
     const mirrorSpan = document.createElement('span');
     mirrorSpan.textContent = '좌우 대칭';
@@ -2088,6 +2224,7 @@ function renderScarList() {
       state.scars.splice(idx, 1);
       renderScarList();
       refreshTextureOnly();
+      pushHistory();
     });
 
     rightControls.append(mirrorLabel, removeBtn);
@@ -2112,6 +2249,9 @@ function renderScarList() {
         valSpan.textContent = fmtFn(num);
         onChange(num);
         refreshTextureOnly();
+      });
+      input.addEventListener('change', () => {
+        pushHistory();
       });
       row.append(lbl, input, valSpan);
       return row;
@@ -2190,6 +2330,7 @@ function renderFaceDecoControls() {
       cfg.y = 0.0;
       renderFaceDecoControls();
       refreshTextureOnly();
+      pushHistory();
     });
 
     head.append(title, resetBtn);
@@ -2221,6 +2362,9 @@ function renderFaceDecoControls() {
           valSpan.textContent = num.toFixed(2);
           onChange(num);
           refreshTextureOnly();
+        });
+        input.addEventListener('change', () => {
+          pushHistory();
         });
         row.append(lbl, input, valSpan);
         return row;
@@ -2265,6 +2409,7 @@ function buildColorPalette(containerId, colors, stateKey, onCustomChange) {
       } else {
         refreshTextureOnly();
       }
+      pushHistory();
     });
     container.appendChild(sw);
   });
@@ -2282,6 +2427,9 @@ function bindColorInput(inputId, stateKey, onCustomChange) {
       refreshTextureOnly();
     }
   });
+  el.addEventListener('change', () => {
+    pushHistory();
+  });
 }
 
 function bindCheckbox(chkId, stateKey, needsRebuild) {
@@ -2295,6 +2443,7 @@ function bindCheckbox(chkId, stateKey, needsRebuild) {
     } else {
       refreshTextureOnly();
     }
+    pushHistory();
   });
 }
 
@@ -2311,6 +2460,9 @@ function bindSlider(sliderId, stateKey, valId, formatFn, needsRebuild) {
     } else {
       refreshTextureOnly();
     }
+  });
+  el.addEventListener('change', () => {
+    pushHistory();
   });
 }
 

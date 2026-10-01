@@ -80,6 +80,12 @@ body {
   background: var(--bg-subtle);
 }
 
+.ctrl-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* 메인 레이아웃 */
 .studio-workspace {
   display: grid;
