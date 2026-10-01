@@ -1032,11 +1032,11 @@ export class TextureGenerator {
         ctx.quadraticCurveTo(0, -8 * scale, 16 * scale, 4 * scale);
         ctx.stroke();
       } else if (type === 'round') {
-        // 둥근 아치 (스케치 1번 4번째: 부드럽게 감싸는 긴 아치)
+        // 둥근 아치: 뒤집은 둥근 아치 (아래로 볼록한 U자형 반전 아치)
         ctx.lineWidth = 7.0 * scale;
         ctx.beginPath();
-        ctx.moveTo(-dir * 22 * scale, 8 * scale);
-        ctx.quadraticCurveTo(0, -13 * scale, dir * 22 * scale, 6 * scale);
+        ctx.moveTo(-dir * 22 * scale, -8 * scale);
+        ctx.quadraticCurveTo(0, 13 * scale, dir * 22 * scale, -6 * scale);
         ctx.stroke();
       } else if (type === 'angry') {
         // 화난 눈썹 (스케치 1번 5번째: 사선 치켜올림)
