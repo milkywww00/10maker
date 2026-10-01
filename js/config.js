@@ -33,11 +33,21 @@ export const DEFAULT_STATE = {
   tailTipEnabled: false,
   eyeType: 'default',      // 9종
   eyelashType: 'none',     // 4종
+  eyebrowType: 'none',
+  eyebrows: [],
+  eyebrowColor: '#18181b',
+  eyebrowScale: 1.0,
+  eyebrowY: 0.0,
+  eyebrowSpacing: 0.0,
   mouthType: 'cat_w',      // 6종
 
-  // 얼굴 무늬 & 점 & 홍조
+  // 얼굴 무늬 & 꾸밈 & 점 & 홍조
   patternType: 'none',
   patterns: [],
+  faceDecos: [],
+  faceDecoScale: 1.0,
+  faceDecoY: 0.0,
+  faceDecoX: 0.0,
   bellyPatch: false,
   blushType: 'comic_circle',
   blushScale: 1.0,
@@ -79,9 +89,9 @@ export const EAR_TYPES = [
   { id: 'hamster', name: '햄스터', hasInner: true },
   { id: 'dog', name: '강아지', hasInner: false },
   { id: 'deer1', name: '사슴 1', hasInner: true },
-  { id: 'deer2', name: '사슴 2 (뿔)', hasInner: true },
+  { id: 'deer2', name: '사슴 2 뿔', hasInner: true },
   { id: 'rabbit', name: '토끼', hasInner: true },
-  { id: 'lop_rabbit', name: '토끼 (롭이어)', hasInner: true },
+  { id: 'lop_rabbit', name: '롭이어 토끼', hasInner: true },
   { id: 'axolotl', name: '아홀로틀', hasInner: false },
   { id: 'raccoon', name: '너구리', hasInner: true },
   { id: 'otter', name: '수달', hasInner: true },
@@ -113,19 +123,40 @@ export const EYE_TYPES = [
 // 속눈썹 옵션
 export const EYELASH_TYPES = [
   { id: 'none', name: '없음' },
-  { id: 'top', name: '위 속눈썹 (1개)' },
-  { id: 'bottom', name: '아래 속눈썹 (2개)' },
+  { id: 'top', name: '위 속눈썹' },
+  { id: 'bottom', name: '아래 속눈썹' },
   { id: 'both', name: '위 + 아래 모두' },
 ];
 
 // 6종 입 모양 (스케치 3번)
 export const MOUTH_TYPES = [
-  { id: 'line_t', name: '일자입 (ㅗ)' },
-  { id: 'cat_w', name: '고양이입 (ω)' },
-  { id: 'pout_v', name: '삐죽입 (ㅅ)' },
-  { id: 'smile_u', name: '미소입 (◡)' },
+  { id: 'line_t', name: '일자입' },
+  { id: 'cat_w', name: '고양이입' },
+  { id: 'pout_v', name: '삐죽입' },
+  { id: 'smile_u', name: '미소입' },
   { id: 'nose_only', name: '코만 표시' },
-  { id: 'open_d', name: '벌린입 (▽)' },
+  { id: 'open_d', name: '벌린입' },
+];
+
+// 눈썹 종류
+export const EYEBROW_TYPES = [
+  { id: 'none', name: '없음' },
+  { id: 'dot', name: '마로' },
+  { id: 'short_arch', name: '짧은 아치' },
+  { id: 'thick', name: '송충이' },
+  { id: 'angry', name: '화남' },
+  { id: 'sad', name: '처짐' },
+];
+
+// 얼굴 꾸밈 종류
+export const FACE_DECO_TYPES = [
+  { id: 'none', name: '없음' },
+  { id: 'beard', name: '수염' },
+  { id: 'shadow', name: '그림자' },
+  { id: 'sweat', name: '삐질' },
+  { id: 'wrinkle', name: '주름' },
+  { id: 'shock', name: '놀람' },
+  { id: 'anger', name: '화남' },
 ];
 
 // 홍조 종류
@@ -168,11 +199,11 @@ export const EXTRA_ACC_TYPES = [
   { id: 'star_pin', name: '별 머리핀' },
   { id: 'glasses', name: '동그란 안경' },
   { id: 'square_glasses', name: '사각 안경' },
-  { id: 'eyepatch_left', name: '안대 (왼쪽)' },
-  { id: 'eyepatch_right', name: '안대 (오른쪽)' },
-  { id: 'bandaid_nose', name: '밴드 (코 위)' },
-  { id: 'bandaid_left_cheek', name: '밴드 (왼쪽 볼)' },
-  { id: 'bandaid_right_cheek', name: '밴드 (오른쪽 볼)' },
+  { id: 'eyepatch_left', name: '왼쪽 안대' },
+  { id: 'eyepatch_right', name: '오른쪽 안대' },
+  { id: 'bandaid_nose', name: '코 밴드' },
+  { id: 'bandaid_left_cheek', name: '왼쪽 볼 밴드' },
+  { id: 'bandaid_right_cheek', name: '오른쪽 볼 밴드' },
 ];
 
 // 춤 프리셋 (이모티콘 제거)

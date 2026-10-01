@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css?v=25" />
+  <link rel="stylesheet" href="styles.css?v=26" />
   <script type="importmap">
     {
       "imports": {
@@ -223,9 +223,37 @@
           <div class="section-block">
             <div class="section-head">
               <h2>속눈썹 옵션</h2>
-              <span class="section-desc">위 속눈썹(1개) · 아래 속눈썹(2개) 조합</span>
+              <span class="section-desc">위 속눈썹 · 아래 속눈썹 조합</span>
             </div>
             <div class="chip-list" id="eyelashGrid"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2>눈썹</h2>
+              <div class="inline-pickers">
+                <label>눈썹 색상 <input type="color" id="pickerEyebrowColor" class="color-box" value="#18181b" /></label>
+              </div>
+            </div>
+            <div class="chip-list" id="eyebrowGrid"></div>
+
+            <div class="slider-group" style="margin-top: 14px;">
+              <div class="slider-item">
+                <label for="sliderEyebrowScale">눈썹 크기</label>
+                <input type="range" id="sliderEyebrowScale" min="0.5" max="2.0" step="0.05" value="1.0" />
+                <span id="valEyebrowScale">1.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderEyebrowY">눈썹 위치</label>
+                <input type="range" id="sliderEyebrowY" min="-1.0" max="1.0" step="0.05" value="0.0" />
+                <span id="valEyebrowY">0.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderEyebrowSpacing">눈썹 간격</label>
+                <input type="range" id="sliderEyebrowSpacing" min="-1.0" max="1.0" step="0.05" value="0.0" />
+                <span id="valEyebrowSpacing">0.00</span>
+              </div>
+            </div>
           </div>
 
           <div class="section-block">
@@ -334,7 +362,7 @@
             </div>
 
             <div class="option-bar" style="margin-top: 8px;">
-              <span>사슴 뿔 색상 (사슴 2 선택 시)</span>
+              <span>사슴 뿔 색상</span>
               <input type="color" id="pickerAntlerColor" class="color-box" value="#c69c6d" />
             </div>
           </div>
@@ -342,6 +370,31 @@
 
         <!-- 탭 4: 홍조 · 점 · 장식 -->
         <section class="tab-pane" id="tab-deco">
+          <div class="section-block">
+            <div class="section-head">
+              <h2>얼굴 꾸밈</h2>
+            </div>
+            <div class="chip-list" id="faceDecoGrid"></div>
+
+            <div class="slider-group" style="margin-top: 14px;">
+              <div class="slider-item">
+                <label for="sliderFaceDecoScale">꾸밈 크기</label>
+                <input type="range" id="sliderFaceDecoScale" min="0.5" max="2.0" step="0.05" value="1.0" />
+                <span id="valFaceDecoScale">1.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderFaceDecoY">꾸밈 세로 위치</label>
+                <input type="range" id="sliderFaceDecoY" min="-1.0" max="1.0" step="0.05" value="0.0" />
+                <span id="valFaceDecoY">0.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderFaceDecoX">꾸밈 가로 위치</label>
+                <input type="range" id="sliderFaceDecoX" min="-1.0" max="1.0" step="0.05" value="0.0" />
+                <span id="valFaceDecoX">0.00</span>
+              </div>
+            </div>
+          </div>
+
           <div class="section-block">
             <div class="section-head">
               <h2>홍조 이펙트</h2>
@@ -426,7 +479,7 @@
             <div class="option-bar">
               <label class="check-label">
                 <input type="checkbox" id="chkLowPolyFlat" />
-                <span>각진 폴리곤 면 표시 (Flat Facet 모드)</span>
+                <span>각진 폴리곤 면 표시</span>
               </label>
             </div>
             <div class="chip-list" id="polyDetailGrid" style="margin-top: 10px;">
@@ -438,7 +491,7 @@
             <div class="option-bar" style="margin-top: 14px;">
               <label class="check-label">
                 <input type="checkbox" id="chkOutline" checked />
-                <span>외곽선(잉크 라인) 표시</span>
+                <span>외곽선 표시</span>
               </label>
               <input type="color" id="pickerOutlineColor" class="color-box" value="#18181b" title="외곽선 선 색상" />
             </div>
@@ -640,6 +693,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=25"></script>
+  <script type="module" src="js/app.js?v=26"></script>
 </body>
 </html>

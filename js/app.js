@@ -7,16 +7,18 @@ import {
   EYE_TYPES,
   EYELASH_TYPES,
   MOUTH_TYPES,
+  EYEBROW_TYPES,
+  FACE_DECO_TYPES,
   BLUSH_TYPES,
   PATTERN_TYPES,
   RIBBON_TYPES,
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=25';
-import { TextureGenerator } from './textureGenerator.js?v=25';
-import { CharacterBuilder } from './characterBuilder.js?v=25';
-import { CharacterAnimator } from './animator.js?v=25';
+} from './config.js?v=26';
+import { TextureGenerator } from './textureGenerator.js?v=26';
+import { CharacterBuilder } from './characterBuilder.js?v=26';
+import { CharacterAnimator } from './animator.js?v=26';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -25,7 +27,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=25';
+} from './exporter.js?v=26';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -38,6 +40,12 @@ function sanitizeCharacterState(raw) {
     }
   }
   clean.characterName = typeof raw.characterName === 'string' ? raw.characterName : '';
+  clean.eyebrowType = typeof raw.eyebrowType === 'string'
+    ? raw.eyebrowType
+    : (Array.isArray(raw.eyebrows) && raw.eyebrows[0]) || 'none';
+  if (!Array.isArray(clean.faceDecos)) {
+    clean.faceDecos = [];
+  }
   if (!Array.isArray(clean.ribbons)) {
     clean.ribbons = raw.ribbonType && raw.ribbonType !== 'none' ? [raw.ribbonType] : [];
   }
@@ -1401,6 +1409,9 @@ function initUI() {
   // 속눈썹 옵션
   buildChipGroup('eyelashGrid', EYELASH_TYPES, 'eyelashType', false);
 
+  // 눈썹 5종 (단일 선택)
+  buildChipGroup('eyebrowGrid', EYEBROW_TYPES, 'eyebrowType', false);
+
   // 입 6종 그리드
   const mouthGrid = document.getElementById('mouthGrid');
   MOUTH_TYPES.forEach((item) => {
@@ -1429,8 +1440,9 @@ function initUI() {
     mouthGrid.appendChild(card);
   });
 
-  // 무늬(다중), 홍조, 리본(다중), 추가 소품(다중), 모션 칩 그룹
+  // 무늬(다중), 얼굴 꾸밈(다중), 홍조, 리본(다중), 추가 소품(다중), 모션 칩 그룹
   buildMultiChipGroup('patternGrid', PATTERN_TYPES, 'patterns', false);
+  buildMultiChipGroup('faceDecoGrid', FACE_DECO_TYPES, 'faceDecos', false);
   buildChipGroup('blushGrid', BLUSH_TYPES, 'blushType', false);
   buildMultiChipGroup('ribbonGrid', RIBBON_TYPES, 'ribbons', true);
   buildMultiChipGroup('extraAccGrid', EXTRA_ACC_TYPES, 'extraAccessories', true);
@@ -1529,12 +1541,19 @@ function initUI() {
   bindColorInput('pickerScarColor', 'scarColor');
   bindColorInput('pickerAccessoryColor', 'accessoryColor');
   bindColorInput('colorTailTip', 'tailTipColor');
+  bindColorInput('pickerEyebrowColor', 'eyebrowColor');
 
   bindCheckbox('chkTailTip', 'tailTipEnabled', true);
   bindCheckbox('chkBellyPatch', 'bellyPatch', true);
   bindCheckbox('chkLowPolyFlat', 'lowPolyFlat', true);
   bindCheckbox('chkOutline', 'outlineEnabled', true);
 
+  bindSlider('sliderEyebrowScale', 'eyebrowScale', 'valEyebrowScale', (v) => v.toFixed(2), false);
+  bindSlider('sliderEyebrowY', 'eyebrowY', 'valEyebrowY', (v) => v.toFixed(2), false);
+  bindSlider('sliderEyebrowSpacing', 'eyebrowSpacing', 'valEyebrowSpacing', (v) => v.toFixed(2), false);
+  bindSlider('sliderFaceDecoScale', 'faceDecoScale', 'valFaceDecoScale', (v) => v.toFixed(2), false);
+  bindSlider('sliderFaceDecoY', 'faceDecoY', 'valFaceDecoY', (v) => v.toFixed(2), false);
+  bindSlider('sliderFaceDecoX', 'faceDecoX', 'valFaceDecoX', (v) => v.toFixed(2), false);
   bindSlider('sliderBlushScale', 'blushScale', 'valBlushScale', (v) => v.toFixed(2), false);
   bindSlider('sliderBlushOpacity', 'blushOpacity', 'valBlushOpacity', (v) => `${Math.round(v * 100)}%`, false);
   bindSlider('sliderRibbonScale', 'ribbonScale', 'valRibbonScale', (v) => v.toFixed(2), true);
@@ -2199,8 +2218,10 @@ function syncUIFromState() {
   markActive('#tailGrid .part-card', state.tailType);
   markActive('#eyeGrid .part-card', state.eyeType);
   markActive('#eyelashGrid .chip-btn', state.eyelashType);
+  markActive('#eyebrowGrid .chip-btn', state.eyebrowType);
   markActive('#mouthGrid .part-card', state.mouthType);
   markMultiActive('#patternGrid .chip-btn', state.patterns);
+  markMultiActive('#faceDecoGrid .chip-btn', state.faceDecos);
   markActive('#blushGrid .chip-btn', state.blushType);
   markMultiActive('#ribbonGrid .chip-btn', state.ribbons);
   markMultiActive('#extraAccGrid .chip-btn', state.extraAccessories);
@@ -2230,6 +2251,7 @@ function syncUIFromState() {
   setVal('pickerScarColor', state.scarColor || '#b55d60');
   setVal('pickerAccessoryColor', state.accessoryColor);
   setVal('colorTailTip', state.tailTipColor);
+  setVal('pickerEyebrowColor', state.eyebrowColor || '#18181b');
   setVal('pickerOutlineColor', state.outlineColor || '#18181b');
   setVal('pickerOutlineColor2', state.outlineColor || '#18181b');
 
@@ -2261,6 +2283,12 @@ function syncUIFromState() {
     if (s && v !== undefined) s.value = v;
     if (sp && v !== undefined) sp.textContent = fmt(Number(v));
   };
+  setSlider('sliderEyebrowScale', 'valEyebrowScale', state.eyebrowScale, (v) => v.toFixed(2));
+  setSlider('sliderEyebrowY', 'valEyebrowY', state.eyebrowY, (v) => v.toFixed(2));
+  setSlider('sliderEyebrowSpacing', 'valEyebrowSpacing', state.eyebrowSpacing, (v) => v.toFixed(2));
+  setSlider('sliderFaceDecoScale', 'valFaceDecoScale', state.faceDecoScale, (v) => v.toFixed(2));
+  setSlider('sliderFaceDecoY', 'valFaceDecoY', state.faceDecoY, (v) => v.toFixed(2));
+  setSlider('sliderFaceDecoX', 'valFaceDecoX', state.faceDecoX, (v) => v.toFixed(2));
   setSlider('sliderBlushScale', 'valBlushScale', state.blushScale, (v) => v.toFixed(2));
   setSlider('sliderBlushOpacity', 'valBlushOpacity', state.blushOpacity, (v) => `${Math.round(v * 100)}%`);
   setSlider('sliderRibbonScale', 'valRibbonScale', state.ribbonScale, (v) => v.toFixed(2));
@@ -2338,6 +2366,12 @@ function randomizeCharacter() {
   state.accessoryColor = pick(COLOR_PALETTES.accent);
   state.tailTipEnabled = Math.random() < 0.5;
   state.tailTipColor = pick(COLOR_PALETTES.body);
+
+  // 눈썹 & 얼굴 꾸밈 랜덤
+  state.eyebrowType = pick(EYEBROW_TYPES).id;
+  state.eyebrowColor = pick(COLOR_PALETTES.eye);
+  const decoChoices = FACE_DECO_TYPES.filter((d) => d.id !== 'none');
+  state.faceDecos = Math.random() < 0.35 ? [pick(decoChoices).id] : [];
 
   state.moles = [];
   if (Math.random() < 0.45) {
