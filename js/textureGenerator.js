@@ -1119,12 +1119,12 @@ export class TextureGenerator {
         });
         ctx.restore();
       } else if (type === 'sweat') {
-        // 3. 삐질: 관자놀이/이마 평면에 안착하는 깔끔하고 매끄러운 식은땀 물방울 (요청 3 반영: 깨짐 방지 완벽한 벡터 라운드)
+        // 3. 삐질: 크기를 키우고 하이라이트(흰점)를 제거한 깔끔한 식은땀 물방울
         ctx.save();
-        const tx = cx + eyeSpacing + 42 + offsetX; // x=698: 평평한 정면 영역으로 3D 모델 왜곡 방지
-        const ty = eyeY - 60 + offsetY;
-        const w = 26 * scale;
-        const h = 44 * scale;
+        const tx = cx + eyeSpacing + 42 + offsetX; // x=698: 평평한 정면 영역으로 왜곡 방지
+        const ty = eyeY - 64 + offsetY;
+        const w = 38 * scale;
+        const h = 60 * scale;
 
         ctx.translate(tx, ty);
         ctx.rotate(0.18);
@@ -1145,38 +1145,33 @@ export class TextureGenerator {
 
         // 외곽선 (매끄러운 라인 조인)
         ctx.strokeStyle = '#18181b';
-        ctx.lineWidth = 5.5 * scale;
+        ctx.lineWidth = 6 * scale;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        // 흰색 하이라이트 (매끄러운 타원)
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.ellipse(-w * 0.22, -h * 0.04, w * 0.16, h * 0.20, -0.22, 0, Math.PI * 2);
-        ctx.fill();
-
         ctx.restore();
       } else if (type === 'wrinkle') {
-        // 4. 주름: 스케치 2번과 동일하게 왼쪽 눈 아래 라인을 따라 부드럽게 감싸는 곡선 주름 (요청 5 반영)
+        // 4. 주름: 눈을 침범하지 않고 눈과 코 사이 볼 영역에 자연스럽게 위치하는 사선 주름
         ctx.save();
         const ex = cx - eyeSpacing;
         const ey = eyeY;
         ctx.strokeStyle = state.noseMouthColor || '#18181b';
-        ctx.lineWidth = 6 * scale;
+        ctx.lineWidth = 6.2 * scale;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(ex + 18 * scale + offsetX, ey + 22 * scale + offsetY);
+        // 눈 테두리(반경 약 32px)를 완전히 벗어나 눈 안쪽/아래 볼 영역에 안착
+        ctx.moveTo(ex + 44 * scale + offsetX, ey + 16 * scale + offsetY);
         ctx.quadraticCurveTo(
-          ex + 27 * scale + offsetX, ey + 32 * scale + offsetY,
-          ex + 33 * scale + offsetX, ey + 43 * scale + offsetY
+          ex + 51 * scale + offsetX, ey + 26 * scale + offsetY,
+          ex + 56 * scale + offsetX, ey + 36 * scale + offsetY
         );
         ctx.stroke();
         ctx.restore();
       } else if (type === 'shock') {
         // 5. 놀람: 눈 모양에 맞춰 흰색 영역이 변경되는 처리는 drawEyes에서 100% 통합 처리
       } else if (type === 'anger') {
-        // 6. 화남: 첨부 이미지 5번 완벽 일치 (4개의 분리된 둥근 붉은 부메랑 마크 + 검은 외곽선, 요청 7 반영)
+        // 6. 화남: 서로 붙지 않고 널찍한 간격으로 분리된 4개의 둥근 빨간색 부메랑 마크
         ctx.save();
         const ax = cx + eyeSpacing + 46 + offsetX;
         const ay = eyeY - 78 + offsetY;
@@ -1184,41 +1179,28 @@ export class TextureGenerator {
         ctx.translate(ax, ay);
         ctx.rotate(-0.08);
 
-        const drawAngerLobes = (lineWidth, strokeColor) => {
+        const drawBoomerangs = (lineWidth, strokeColor) => {
           ctx.strokeStyle = strokeColor;
           ctx.lineWidth = lineWidth;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
 
-          // 상단 부메랑 (아래로 오목하게 휨)
-          ctx.beginPath();
-          ctx.moveTo(-22 * scale, -24 * scale);
-          ctx.quadraticCurveTo(0, -12 * scale, 22 * scale, -24 * scale);
-          ctx.stroke();
-
-          // 하단 부메랑 (위로 오목하게 휨)
-          ctx.beginPath();
-          ctx.moveTo(-22 * scale, 24 * scale);
-          ctx.quadraticCurveTo(0, 12 * scale, 22 * scale, 24 * scale);
-          ctx.stroke();
-
-          // 좌측 부메랑 (오른쪽으로 오목하게 휨)
-          ctx.beginPath();
-          ctx.moveTo(-24 * scale, -20 * scale);
-          ctx.quadraticCurveTo(-12 * scale, 0, -24 * scale, 20 * scale);
-          ctx.stroke();
-
-          // 우측 부메랑 (왼쪽으로 오목하게 휨)
-          ctx.beginPath();
-          ctx.moveTo(24 * scale, -20 * scale);
-          ctx.quadraticCurveTo(12 * scale, 0, 24 * scale, 20 * scale);
-          ctx.stroke();
+          for (let i = 0; i < 4; i++) {
+            ctx.save();
+            ctx.rotate((i * Math.PI) / 2);
+            ctx.beginPath();
+            // 각 끝점이 인접 부메랑과 겹치지 않도록 충분한 간격을 둔 초승달/부메랑 곡선
+            ctx.moveTo(-13 * scale, -30 * scale);
+            ctx.quadraticCurveTo(0, -19 * scale, 13 * scale, -30 * scale);
+            ctx.stroke();
+            ctx.restore();
+          }
         };
 
-        // 1패스: 두꺼운 검은 테두리
-        drawAngerLobes(13.5 * scale, '#18181b');
-        // 2패스: 선명한 빨간색 내부 채움
-        drawAngerLobes(7.5 * scale, '#ef4444');
+        // 1패스: 도톰한 검은 외곽선
+        drawBoomerangs(12 * scale, '#18181b');
+        // 2패스: 선명한 빨간색 내부
+        drawBoomerangs(6.5 * scale, '#ef4444');
 
         ctx.restore();
       }
