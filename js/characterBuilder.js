@@ -1,6 +1,6 @@
 // 10공방 — 3D 캐릭터 빌더 (롭이어·강아지·햄스터·쥐 귀 정밀 복원, 무늬 끊김 0%, 꼬리 끝 잉크라인 보강, 소품·리본 매끈한 조형)
 import * as THREE from 'three';
-import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=27';
+import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=28';
 
 export const BONE_DEFS = [
   { name: '全ての親', nameEn: 'Root', parent: -1 },          // 0

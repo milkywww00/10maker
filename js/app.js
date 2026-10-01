@@ -15,10 +15,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=27';
-import { TextureGenerator } from './textureGenerator.js?v=27';
-import { CharacterBuilder } from './characterBuilder.js?v=27';
-import { CharacterAnimator } from './animator.js?v=27';
+} from './config.js?v=28';
+import { TextureGenerator } from './textureGenerator.js?v=28';
+import { CharacterBuilder } from './characterBuilder.js?v=28';
+import { CharacterAnimator } from './animator.js?v=28';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -27,7 +27,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=27';
+} from './exporter.js?v=28';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -45,6 +45,23 @@ function sanitizeCharacterState(raw) {
     : (Array.isArray(raw.eyebrows) && raw.eyebrows[0]) || 'none';
   if (!Array.isArray(clean.faceDecos)) {
     clean.faceDecos = [];
+  }
+  if (!clean.faceDecoSettings || typeof clean.faceDecoSettings !== 'object') {
+    clean.faceDecoSettings = {};
+  }
+  const decoKeys = ['beard', 'shadow', 'sweat', 'wrinkle', 'shock', 'anger'];
+  for (const k of decoKeys) {
+    if (!clean.faceDecoSettings[k] || typeof clean.faceDecoSettings[k] !== 'object') {
+      clean.faceDecoSettings[k] = {
+        scale: typeof raw.faceDecoScale === 'number' ? raw.faceDecoScale : 1.0,
+        x: typeof raw.faceDecoX === 'number' ? raw.faceDecoX : 0.0,
+        y: typeof raw.faceDecoY === 'number' ? raw.faceDecoY : 0.0,
+      };
+    } else {
+      if (typeof clean.faceDecoSettings[k].scale !== 'number') clean.faceDecoSettings[k].scale = 1.0;
+      if (typeof clean.faceDecoSettings[k].x !== 'number') clean.faceDecoSettings[k].x = 0.0;
+      if (typeof clean.faceDecoSettings[k].y !== 'number') clean.faceDecoSettings[k].y = 0.0;
+    }
   }
   if (!Array.isArray(clean.ribbons)) {
     clean.ribbons = raw.ribbonType && raw.ribbonType !== 'none' ? [raw.ribbonType] : [];
@@ -1551,9 +1568,6 @@ function initUI() {
   bindSlider('sliderEyebrowScale', 'eyebrowScale', 'valEyebrowScale', (v) => v.toFixed(2), false);
   bindSlider('sliderEyebrowY', 'eyebrowY', 'valEyebrowY', (v) => v.toFixed(2), false);
   bindSlider('sliderEyebrowSpacing', 'eyebrowSpacing', 'valEyebrowSpacing', (v) => v.toFixed(2), false);
-  bindSlider('sliderFaceDecoScale', 'faceDecoScale', 'valFaceDecoScale', (v) => v.toFixed(2), false);
-  bindSlider('sliderFaceDecoY', 'faceDecoY', 'valFaceDecoY', (v) => v.toFixed(2), false);
-  bindSlider('sliderFaceDecoX', 'faceDecoX', 'valFaceDecoX', (v) => v.toFixed(2), false);
   bindSlider('sliderBlushScale', 'blushScale', 'valBlushScale', (v) => v.toFixed(2), false);
   bindSlider('sliderBlushOpacity', 'blushOpacity', 'valBlushOpacity', (v) => `${Math.round(v * 100)}%`, false);
   bindSlider('sliderRibbonScale', 'ribbonScale', 'valRibbonScale', (v) => v.toFixed(2), true);
@@ -2128,6 +2142,111 @@ function renderScarList() {
   });
 }
 
+function renderFaceDecoControls() {
+  const container = document.getElementById('faceDecoControlsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const decos = Array.isArray(state.faceDecos) ? state.faceDecos.filter((d) => d && d !== 'none') : [];
+  if (decos.length === 0) {
+    return;
+  }
+
+  if (!state.faceDecoSettings || typeof state.faceDecoSettings !== 'object') {
+    state.faceDecoSettings = {};
+  }
+
+  const decoNames = {
+    beard: '수염',
+    shadow: '그림자',
+    sweat: '삐질',
+    wrinkle: '주름',
+    shock: '놀람',
+    anger: '화남',
+  };
+
+  decos.forEach((type) => {
+    if (!state.faceDecoSettings[type]) {
+      state.faceDecoSettings[type] = { scale: 1.0, x: 0.0, y: 0.0 };
+    }
+    const cfg = state.faceDecoSettings[type];
+    const name = decoNames[type] || type;
+
+    const card = document.createElement('div');
+    card.className = 'mole-item-card';
+
+    const head = document.createElement('div');
+    head.className = 'mole-item-head';
+    const title = document.createElement('span');
+    title.textContent = `${name} 조절`;
+
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'mole-remove-btn';
+    resetBtn.textContent = '초기화';
+    resetBtn.addEventListener('click', () => {
+      cfg.scale = 1.0;
+      cfg.x = 0.0;
+      cfg.y = 0.0;
+      renderFaceDecoControls();
+      refreshTextureOnly();
+    });
+
+    head.append(title, resetBtn);
+    card.appendChild(head);
+
+    if (type === 'shock') {
+      const info = document.createElement('div');
+      info.className = 'mole-empty-msg';
+      info.style.padding = '8px 4px';
+      info.style.textAlign = 'left';
+      info.textContent = '눈 모양에 맞춰 자동으로 눈동자 안쪽에 흰색 영역이 생성됩니다.';
+      card.appendChild(info);
+    } else {
+      const makeRow = (labelText, min, max, step, val, onChange) => {
+        const row = document.createElement('div');
+        row.className = 'slider-item';
+        const lbl = document.createElement('label');
+        lbl.textContent = labelText;
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = min;
+        input.max = max;
+        input.step = step;
+        input.value = val;
+        const valSpan = document.createElement('span');
+        valSpan.textContent = Number(val).toFixed(2);
+        input.addEventListener('input', (e) => {
+          const num = parseFloat(e.target.value);
+          valSpan.textContent = num.toFixed(2);
+          onChange(num);
+          refreshTextureOnly();
+        });
+        row.append(lbl, input, valSpan);
+        return row;
+      };
+
+      card.appendChild(
+        makeRow('크기', 0.4, 2.5, 0.05, cfg.scale ?? 1.0, (v) => {
+          cfg.scale = v;
+        })
+      );
+      card.appendChild(
+        makeRow('좌우 위치', -1.2, 1.2, 0.02, cfg.x ?? 0.0, (v) => {
+          cfg.x = v;
+        })
+      );
+      card.appendChild(
+        makeRow('상하 위치', -1.2, 1.2, 0.02, cfg.y ?? 0.0, (v) => {
+          cfg.y = v;
+        })
+      );
+    }
+
+    container.appendChild(card);
+  });
+}
+
 function buildColorPalette(containerId, colors, stateKey, onCustomChange) {
   const container = document.getElementById(containerId);
   if (!container || !Array.isArray(colors)) return;
@@ -2230,6 +2349,7 @@ function syncUIFromState() {
 
   renderMoleList();
   renderScarList();
+  renderFaceDecoControls();
 
   const setVal = (id, v) => {
     const el = document.getElementById(id);
@@ -2286,9 +2406,6 @@ function syncUIFromState() {
   setSlider('sliderEyebrowScale', 'valEyebrowScale', state.eyebrowScale, (v) => v.toFixed(2));
   setSlider('sliderEyebrowY', 'valEyebrowY', state.eyebrowY, (v) => v.toFixed(2));
   setSlider('sliderEyebrowSpacing', 'valEyebrowSpacing', state.eyebrowSpacing, (v) => v.toFixed(2));
-  setSlider('sliderFaceDecoScale', 'valFaceDecoScale', state.faceDecoScale, (v) => v.toFixed(2));
-  setSlider('sliderFaceDecoY', 'valFaceDecoY', state.faceDecoY, (v) => v.toFixed(2));
-  setSlider('sliderFaceDecoX', 'valFaceDecoX', state.faceDecoX, (v) => v.toFixed(2));
   setSlider('sliderBlushScale', 'valBlushScale', state.blushScale, (v) => v.toFixed(2));
   setSlider('sliderBlushOpacity', 'valBlushOpacity', state.blushOpacity, (v) => `${Math.round(v * 100)}%`);
   setSlider('sliderRibbonScale', 'valRibbonScale', state.ribbonScale, (v) => v.toFixed(2));
@@ -2372,6 +2489,14 @@ function randomizeCharacter() {
   state.eyebrowColor = pick(COLOR_PALETTES.eye);
   const decoChoices = FACE_DECO_TYPES.filter((d) => d.id !== 'none');
   state.faceDecos = Math.random() < 0.35 ? [pick(decoChoices).id] : [];
+  state.faceDecoSettings = {
+    beard: { scale: 1.0, x: 0.0, y: 0.0 },
+    shadow: { scale: 1.0, x: 0.0, y: 0.0 },
+    sweat: { scale: 1.0, x: 0.0, y: 0.0 },
+    wrinkle: { scale: 1.0, x: 0.0, y: 0.0 },
+    shock: { scale: 1.0, x: 0.0, y: 0.0 },
+    anger: { scale: 1.0, x: 0.0, y: 0.0 },
+  };
 
   state.moles = [];
   if (Math.random() < 0.45) {

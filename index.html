@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
   <script type="importmap">
     {
       "imports": {
@@ -376,23 +376,7 @@
             </div>
             <div class="chip-list" id="faceDecoGrid"></div>
 
-            <div class="slider-group" style="margin-top: 14px;">
-              <div class="slider-item">
-                <label for="sliderFaceDecoScale">꾸밈 크기</label>
-                <input type="range" id="sliderFaceDecoScale" min="0.5" max="2.0" step="0.05" value="1.0" />
-                <span id="valFaceDecoScale">1.00</span>
-              </div>
-              <div class="slider-item">
-                <label for="sliderFaceDecoY">꾸밈 세로 위치</label>
-                <input type="range" id="sliderFaceDecoY" min="-1.0" max="1.0" step="0.05" value="0.0" />
-                <span id="valFaceDecoY">0.00</span>
-              </div>
-              <div class="slider-item">
-                <label for="sliderFaceDecoX">꾸밈 가로 위치</label>
-                <input type="range" id="sliderFaceDecoX" min="-1.0" max="1.0" step="0.05" value="0.0" />
-                <span id="valFaceDecoX">0.00</span>
-              </div>
-            </div>
+            <div id="faceDecoControlsContainer" class="mole-list-container" style="margin-top: 14px;"></div>
           </div>
 
           <div class="section-block">
@@ -693,6 +677,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=27"></script>
+  <script type="module" src="js/app.js?v=28"></script>
 </body>
 </html>

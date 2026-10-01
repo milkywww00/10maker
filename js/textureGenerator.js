@@ -759,17 +759,20 @@ export class TextureGenerator {
     const rightColor = isOdd ? (state.eyeColorRight || '#3b82f6') : defaultColor;
     const extras = Array.isArray(state.extraAccessories) ? state.extraAccessories : [];
 
+    const isShock = Array.isArray(state.faceDecos) && state.faceDecos.includes('shock');
+    const shockSettings = (state.faceDecoSettings && state.faceDecoSettings.shock) || {};
+
     [-1, 1].forEach((dir) => {
       if (dir === -1 && (extras.includes('eyepatch_left') || extras.includes('pirate_patch_left'))) return;
       if (dir === 1 && (extras.includes('eyepatch_right') || extras.includes('pirate_patch_right'))) return;
       const ex = cx + dir * eyeSpacing;
       // dir === -1: 왼쪽 눈(보는 사람 기준 왼쪽), dir === 1: 오른쪽 눈(보는 사람 기준 오른쪽)
       const color = dir === -1 ? leftColor : rightColor;
-      this.drawSingleEye(ctx, ex, eyeY, dir, eyeType, lashType, color, 1.0);
+      this.drawSingleEye(ctx, ex, eyeY, dir, eyeType, lashType, color, 1.0, isShock, shockSettings);
     });
   }
 
-  drawSingleEye(ctx, ex, ey, dir, eyeType, lashType, color, scale = 1.0) {
+  drawSingleEye(ctx, ex, ey, dir, eyeType, lashType, color, scale = 1.0, isShock = false, shockSettings = null) {
     ctx.save();
     ctx.translate(ex, ey);
     ctx.scale(scale, scale);
@@ -810,9 +813,19 @@ export class TextureGenerator {
     }
 
     if (eyeType === 'default') {
-      ctx.beginPath();
-      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (isShock) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 11;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (eyeType === 'angry') {
       ctx.save();
       ctx.beginPath();
@@ -823,9 +836,19 @@ export class TextureGenerator {
       ctx.closePath();
       ctx.clip();
 
-      ctx.beginPath();
-      ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (isShock) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     } else if (eyeType === 'sad') {
       ctx.save();
@@ -837,9 +860,19 @@ export class TextureGenerator {
       ctx.closePath();
       ctx.clip();
 
-      ctx.beginPath();
-      ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (isShock) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     } else if (eyeType === 'half') {
       ctx.save();
@@ -847,9 +880,19 @@ export class TextureGenerator {
       ctx.rect(-52, -5, 104, 62);
       ctx.clip();
 
-      ctx.beginPath();
-      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (isShock) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     } else if (eyeType === 'sparkle') {
       const w = 38;
@@ -861,8 +904,27 @@ export class TextureGenerator {
       ctx.quadraticCurveTo(-5, 5, -w, 0);
       ctx.quadraticCurveTo(-5, -5, 0, -h);
       ctx.closePath();
-      ctx.fill();
+      if (isShock) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      } else {
+        ctx.fill();
+      }
     } else if (eyeType === 'wink_tight') {
+      if (isShock) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.lineWidth = 14;
       ctx.beginPath();
       ctx.moveTo(dir * 25, -24);
@@ -870,18 +932,51 @@ export class TextureGenerator {
       ctx.lineTo(dir * 25, 24);
       ctx.stroke();
     } else if (eyeType === 'closed_down') {
+      if (isShock) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.lineWidth = 14;
       ctx.beginPath();
       ctx.moveTo(-32, 3);
       ctx.quadraticCurveTo(0, 25, 32, 3);
       ctx.stroke();
     } else if (eyeType === 'happy_up') {
+      if (isShock) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.lineWidth = 14;
       ctx.beginPath();
       ctx.moveTo(-33, 9);
       ctx.quadraticCurveTo(0, -25, 33, 9);
       ctx.stroke();
     } else if (eyeType === 'flat_line') {
+      if (isShock) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.lineWidth = 16;
       ctx.beginPath();
       ctx.moveTo(-32, 3);
@@ -965,173 +1060,165 @@ export class TextureGenerator {
     ctx.restore();
   }
 
-  // 얼굴 꾸밈 6종 (수염, 그림자, 삐질, 주름, 놀람, 화남 + 다중 선택 + 크기/위치 조절)
+  // 얼굴 꾸밈 6종 (수염, 그림자, 삐질, 주름, 놀람, 화남 + 개별 크기/위치 조절)
   drawFaceDecos(ctx, state) {
     const decos = Array.isArray(state.faceDecos) ? state.faceDecos.filter((d) => d && d !== 'none') : [];
     if (decos.length === 0) return;
 
     const { cx, eyeY, eyeSpacing, noseY } = this.getFaceCoords();
-    const scale = state.faceDecoScale ?? 1.0;
-    const offsetX = (state.faceDecoX ?? 0.0) * 45;
-    const offsetY = (state.faceDecoY ?? 0.0) * 45;
+    const settings = state.faceDecoSettings || {};
 
     ctx.save();
 
     decos.forEach((type) => {
+      const cfg = settings[type] || {};
+      const scale = cfg.scale !== undefined ? cfg.scale : (state.faceDecoScale ?? 1.0);
+      const offsetX = ((cfg.x !== undefined ? cfg.x : (state.faceDecoX ?? 0.0))) * 45;
+      const offsetY = ((cfg.y !== undefined ? cfg.y : (state.faceDecoY ?? 0.0))) * 45;
+
       if (type === 'beard') {
-        // 1. 수염: 입 아래 턱 중앙의 짧은 수염 선들
+        // 1. 수염: 입 바로 아래 턱 중앙의 5개 세로 수염 선 (y=noseY+30으로 턱 중앙에 확실히 표시!)
         ctx.save();
-        const by = noseY + 68 + offsetY;
+        const by = noseY + 30 + offsetY;
         const bx = cx + offsetX;
         ctx.strokeStyle = state.noseMouthColor || '#18181b';
-        ctx.lineWidth = 6 * scale;
+        ctx.lineWidth = 5 * scale;
         ctx.lineCap = 'round';
-        [-18, -9, 0, 9, 18].forEach((dx) => {
+        [-16, -8, 0, 8, 16].forEach((dx) => {
           ctx.beginPath();
-          ctx.moveTo(bx + dx * scale, by - 6 * scale);
+          ctx.moveTo(bx + dx * scale, by - 2 * scale);
           ctx.lineTo(bx + dx * scale, by + 12 * scale);
           ctx.stroke();
         });
         ctx.restore();
       } else if (type === 'shadow') {
-        // 2. 그림자: 눈 사이 미간의 보라빛 세로선 그림자
+        // 2. 그림자: 눈 사이 미간의 납작한 보라빛 타원 + 내부 세로선 (요청 4 반영: 더욱 납작한 타원형)
         ctx.save();
-        const sy = eyeY - 14 + offsetY;
+        const sy = eyeY - 10 + offsetY;
         const sx = cx + offsetX;
-        const sw = 48 * scale;
-        const sh = 42 * scale;
+        const sw = 56 * scale; // 넓고
+        const sh = 28 * scale; // 납작한 타원형!
 
         // 보라빛 타원 배경
-        ctx.fillStyle = 'rgba(102, 92, 148, 0.72)';
+        ctx.fillStyle = 'rgba(102, 92, 148, 0.75)';
         ctx.beginPath();
         ctx.ellipse(sx, sy, sw, sh, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 내부 어두운 세로 해칭선
+        // 내부 어두운 세로 해칭선 5개
         ctx.strokeStyle = '#372d5b';
         ctx.lineWidth = 5 * scale;
         ctx.lineCap = 'round';
-        [-28, -14, 0, 14, 28].forEach((dx) => {
-          const len = (1.0 - Math.pow(Math.abs(dx) / 36, 1.5)) * sh * 0.9;
+        [-32, -16, 0, 16, 32].forEach((dx) => {
+          const factor = Math.max(0, 1.0 - Math.pow(Math.abs(dx) / (sw * 0.75), 1.8));
+          const len = factor * sh * 0.82;
           ctx.beginPath();
-          ctx.moveTo(sx + dx * scale, sy - len);
-          ctx.lineTo(sx + dx * scale, sy + len);
+          ctx.moveTo(sx + dx * (sw / 56), sy - len);
+          ctx.lineTo(sx + dx * (sw / 56), sy + len);
           ctx.stroke();
         });
         ctx.restore();
       } else if (type === 'sweat') {
-        // 3. 삐질: 관자놀이 파란 식은땀 방울
+        // 3. 삐질: 관자놀이/이마 평면에 안착하는 깔끔하고 매끄러운 식은땀 물방울 (요청 3 반영: 깨짐 방지 완벽한 벡터 라운드)
         ctx.save();
-        const tx = cx + eyeSpacing + 82 + offsetX;
-        const ty = eyeY - 55 + offsetY;
-        const w = 24 * scale;
-        const h = 48 * scale;
+        const tx = cx + eyeSpacing + 42 + offsetX; // x=698: 평평한 정면 영역으로 3D 모델 왜곡 방지
+        const ty = eyeY - 60 + offsetY;
+        const w = 26 * scale;
+        const h = 44 * scale;
 
         ctx.translate(tx, ty);
         ctx.rotate(0.18);
 
-        // 물방울 패스 (상단 뾰족, 하단 둥글)
+        // 부드러운 물방울 패스 (하단 완벽한 반원 아치 + 상단 꼭짓점)
+        const r = w * 0.50;
         ctx.beginPath();
-        ctx.moveTo(0, -h * 0.55);
-        ctx.bezierCurveTo(w * 0.9, -h * 0.15, w * 1.1, h * 0.5, 0, h * 0.55);
-        ctx.bezierCurveTo(-w * 1.1, h * 0.5, -w * 0.9, -h * 0.15, 0, -h * 0.55);
+        ctx.arc(0, h * 0.12, r, 0, Math.PI, false);
+        ctx.lineTo(0, -h * 0.50);
         ctx.closePath();
 
-        // 하늘색 그라데이션 채우기
+        // 그라데이션 채우기
         const grad = ctx.createLinearGradient(0, -h * 0.5, 0, h * 0.5);
         grad.addColorStop(0, '#bae6fd');
         grad.addColorStop(1, '#38bdf8');
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // 외곽선
+        // 외곽선 (매끄러운 라인 조인)
         ctx.strokeStyle = '#18181b';
-        ctx.lineWidth = 6 * scale;
+        ctx.lineWidth = 5.5 * scale;
         ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
         ctx.stroke();
 
-        // 흰색 하이라이트
+        // 흰색 하이라이트 (매끄러운 타원)
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.ellipse(-w * 0.35, -h * 0.05, w * 0.25, h * 0.22, -0.2, 0, Math.PI * 2);
+        ctx.ellipse(-w * 0.22, -h * 0.04, w * 0.16, h * 0.20, -0.22, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
       } else if (type === 'wrinkle') {
-        // 4. 주름: 한쪽 눈 아래 작은 사선 주름
+        // 4. 주름: 스케치 2번과 동일하게 왼쪽 눈 아래 라인을 따라 부드럽게 감싸는 곡선 주름 (요청 5 반영)
         ctx.save();
-        const wx = cx - eyeSpacing + 22 + offsetX;
-        const wy = eyeY + 44 + offsetY;
+        const ex = cx - eyeSpacing;
+        const ey = eyeY;
         ctx.strokeStyle = state.noseMouthColor || '#18181b';
-        ctx.lineWidth = 6.5 * scale;
+        ctx.lineWidth = 6 * scale;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(wx, wy);
-        ctx.lineTo(wx + 16 * scale, wy + 14 * scale);
+        ctx.moveTo(ex + 18 * scale + offsetX, ey + 22 * scale + offsetY);
+        ctx.quadraticCurveTo(
+          ex + 27 * scale + offsetX, ey + 32 * scale + offsetY,
+          ex + 33 * scale + offsetX, ey + 43 * scale + offsetY
+        );
         ctx.stroke();
         ctx.restore();
       } else if (type === 'shock') {
-        // 5. 놀람: 눈 안쪽에 동그란 흰색을 채워 동공이 하얗게 빈 만화적 충격/놀람 표현
-        ctx.save();
-        [-1, 1].forEach((dir) => {
-          const ex = cx + dir * eyeSpacing;
-          const ey = eyeY;
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.ellipse(ex, ey, 24 * scale, 27 * scale, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.strokeStyle = state.eyeColor || '#18181b';
-          ctx.lineWidth = 11 * scale;
-          ctx.beginPath();
-          ctx.ellipse(ex, ey, 34 * scale, 37 * scale, 0, 0, Math.PI * 2);
-          ctx.stroke();
-        });
-        ctx.restore();
+        // 5. 놀람: 눈 모양에 맞춰 흰색 영역이 변경되는 처리는 drawEyes에서 100% 통합 처리
       } else if (type === 'anger') {
-        // 6. 화남: 이마/관자놀이 빨간 사거리 핏줄 마크 (💢)
+        // 6. 화남: 첨부 이미지 5번 완벽 일치 (4개의 분리된 둥근 붉은 부메랑 마크 + 검은 외곽선, 요청 7 반영)
         ctx.save();
-        const ax = cx + eyeSpacing + 64 + offsetX;
-        const ay = eyeY - 76 + offsetY;
-        const sz = 32 * scale;
+        const ax = cx + eyeSpacing + 46 + offsetX;
+        const ay = eyeY - 78 + offsetY;
 
         ctx.translate(ax, ay);
-        ctx.rotate(-0.10);
+        ctx.rotate(-0.08);
 
-        ctx.fillStyle = '#ef4444';
-        ctx.strokeStyle = '#18181b';
-        ctx.lineWidth = 5.5 * scale;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+        const drawAngerLobes = (lineWidth, strokeColor) => {
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
 
-        ctx.beginPath();
-        for (let i = 0; i < 4; i++) {
-          const a0 = (i * Math.PI) / 2;
-          const aMid = a0 + Math.PI / 4;
-          const a1 = a0 + Math.PI / 2;
-          const rIn = sz * 0.22;
-          const rCorner = sz * 0.95;
+          // 상단 부메랑 (아래로 오목하게 휨)
+          ctx.beginPath();
+          ctx.moveTo(-22 * scale, -24 * scale);
+          ctx.quadraticCurveTo(0, -12 * scale, 22 * scale, -24 * scale);
+          ctx.stroke();
 
-          const p0x = Math.cos(a0) * rIn;
-          const p0y = Math.sin(a0) * rIn;
-          const pcx = Math.cos(aMid) * rCorner;
-          const pcy = Math.sin(aMid) * rCorner;
-          const p1x = Math.cos(a1) * rIn;
-          const p1y = Math.sin(a1) * rIn;
+          // 하단 부메랑 (위로 오목하게 휨)
+          ctx.beginPath();
+          ctx.moveTo(-22 * scale, 24 * scale);
+          ctx.quadraticCurveTo(0, 12 * scale, 22 * scale, 24 * scale);
+          ctx.stroke();
 
-          if (i === 0) ctx.moveTo(p0x, p0y);
-          const lobeL1x = Math.cos(aMid - 0.22) * (rCorner * 0.82);
-          const lobeL1y = Math.sin(aMid - 0.22) * (rCorner * 0.82);
-          const lobeL2x = Math.cos(aMid + 0.22) * (rCorner * 0.82);
-          const lobeL2y = Math.sin(aMid + 0.22) * (rCorner * 0.82);
+          // 좌측 부메랑 (오른쪽으로 오목하게 휨)
+          ctx.beginPath();
+          ctx.moveTo(-24 * scale, -20 * scale);
+          ctx.quadraticCurveTo(-12 * scale, 0, -24 * scale, 20 * scale);
+          ctx.stroke();
 
-          ctx.lineTo(lobeL1x, lobeL1y);
-          ctx.quadraticCurveTo(pcx, pcy, lobeL2x, lobeL2y);
-          ctx.lineTo(p1x, p1y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+          // 우측 부메랑 (왼쪽으로 오목하게 휨)
+          ctx.beginPath();
+          ctx.moveTo(24 * scale, -20 * scale);
+          ctx.quadraticCurveTo(12 * scale, 0, 24 * scale, 20 * scale);
+          ctx.stroke();
+        };
+
+        // 1패스: 두꺼운 검은 테두리
+        drawAngerLobes(13.5 * scale, '#18181b');
+        // 2패스: 선명한 빨간색 내부 채움
+        drawAngerLobes(7.5 * scale, '#ef4444');
 
         ctx.restore();
       }
