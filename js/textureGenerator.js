@@ -892,10 +892,13 @@ export class TextureGenerator {
     ctx.restore();
   }
 
-  // 눈썹 5종 (마로, 짧은 아치, 송충이, 화남, 처짐 + 단일 선택 + 크기/위치 조절)
+  // 눈썹 5종 (송충이, 짧은 아치, 둥근 아치, 화남, 처짐 + 단일 선택 + 크기/위치 조절)
   drawEyebrows(ctx, state) {
-    const type = state.eyebrowType || (Array.isArray(state.eyebrows) && state.eyebrows[0]) || 'none';
+    let type = state.eyebrowType || (Array.isArray(state.eyebrows) && state.eyebrows[0]) || 'none';
     if (!type || type === 'none') return;
+    if (type === 'dot' || type === 'thick') {
+      type = 'songchung';
+    }
 
     const { cx, eyeY, eyeSpacing } = this.getFaceCoords();
     const color = state.eyebrowColor || state.noseMouthColor || '#18181b';
@@ -917,40 +920,42 @@ export class TextureGenerator {
       ctx.save();
       ctx.translate(bx, baseY);
 
-      if (type === 'dot') {
-        // 마로 눈썹 (스케치 1번: 검은 테두리 타원 알)
+      if (type === 'songchung') {
+        // 송충이 눈썹 (스케치 1번 2번째: 타원형 둥근 루프, 내부 피부색 채움 + 윤곽선)
         ctx.rotate(dir * 0.12);
         ctx.beginPath();
-        ctx.ellipse(0, 0, 18 * scale, 10 * scale, 0, 0, Math.PI * 2);
-        ctx.lineWidth = 4.5 * scale;
+        ctx.ellipse(0, 0, 19 * scale, 11 * scale, 0, 0, Math.PI * 2);
+        ctx.fillStyle = state.bodyColor || '#ffffff';
+        ctx.fill();
+        ctx.lineWidth = 5.2 * scale;
         ctx.stroke();
       } else if (type === 'short_arch') {
-        // 완만한 짧은 아치
+        // 짧은 아치 (스케치 1번 3번째: 완만한 짧은 아치)
         ctx.lineWidth = 6.5 * scale;
         ctx.beginPath();
-        ctx.moveTo(-18 * scale, 3 * scale);
-        ctx.quadraticCurveTo(0, -7 * scale, 18 * scale, 3 * scale);
+        ctx.moveTo(-16 * scale, 4 * scale);
+        ctx.quadraticCurveTo(0, -8 * scale, 16 * scale, 4 * scale);
         ctx.stroke();
-      } else if (type === 'thick' || type === 'round') {
-        // 송충이 눈썹 (도톰하고 둥근 아치)
-        ctx.lineWidth = 12 * scale;
+      } else if (type === 'round') {
+        // 둥근 아치 (스케치 1번 4번째: 부드럽게 감싸는 긴 아치)
+        ctx.lineWidth = 7.0 * scale;
         ctx.beginPath();
-        ctx.moveTo(-22 * scale, 6 * scale);
-        ctx.quadraticCurveTo(0, -14 * scale, 22 * scale, 6 * scale);
+        ctx.moveTo(-dir * 22 * scale, 8 * scale);
+        ctx.quadraticCurveTo(0, -13 * scale, dir * 22 * scale, 6 * scale);
         ctx.stroke();
       } else if (type === 'angry') {
-        // 화난 눈썹 (사선 치켜올림: 안쪽이 낮고 바깥쪽이 높음)
+        // 화난 눈썹 (스케치 1번 5번째: 사선 치켜올림)
         ctx.lineWidth = 7.5 * scale;
         ctx.beginPath();
         ctx.moveTo(-dir * 22 * scale, 8 * scale);
         ctx.lineTo(dir * 22 * scale, -9 * scale);
         ctx.stroke();
       } else if (type === 'sad') {
-        // 처진 눈썹 (바깥쪽이 아래로 처짐: 안쪽이 높고 바깥쪽이 낮음)
+        // 처진 눈썹 (스케치 1번 6번째: 바깥쪽으로 처짐)
         ctx.lineWidth = 6.5 * scale;
         ctx.beginPath();
         ctx.moveTo(-dir * 22 * scale, -4 * scale);
-        ctx.quadraticCurveTo(-dir * 3 * scale, -8 * scale, dir * 22 * scale, 8 * scale);
+        ctx.quadraticCurveTo(-dir * 4 * scale, -8 * scale, dir * 22 * scale, 8 * scale);
         ctx.stroke();
       }
 

@@ -141,9 +141,9 @@ export const MOUTH_TYPES = [
 // 눈썹 종류
 export const EYEBROW_TYPES = [
   { id: 'none', name: '없음' },
-  { id: 'dot', name: '마로' },
+  { id: 'songchung', name: '송충이' },
   { id: 'short_arch', name: '짧은 아치' },
-  { id: 'thick', name: '송충이' },
+  { id: 'round', name: '둥근 아치' },
   { id: 'angry', name: '화남' },
   { id: 'sad', name: '처짐' },
 ];
