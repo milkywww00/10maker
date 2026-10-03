@@ -1,6 +1,6 @@
 // 10공방 — 3D 캐릭터 빌더 (롭이어·강아지·햄스터·쥐 귀 정밀 복원, 무늬 끊김 0%, 꼬리 끝 잉크라인 보강, 소품·리본 매끈한 조형)
 import * as THREE from 'three';
-import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=31';
+import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=39';
 
 export const BONE_DEFS = [
   { name: '全ての親', nameEn: 'Root', parent: -1 },          // 0
@@ -214,6 +214,10 @@ export class CharacterBuilder {
     // 7. 리본 & 추가 소품
     const accGeoms = this.createAccessoriesGeometry(state, headCenterY, torsoTopY, headScale, chubby, poly);
     geometries.push(...accGeoms);
+
+    // 8. 머리카락 더듬이 (바보털)
+    const ahogeGeoms = this.createAhogesGeometry(state, headCenterY, headScale, poly);
+    geometries.push(...ahogeGeoms);
 
     const mergedGeometry = this.mergeGeometries(geometries, poly.facetBlend);
     const outlineTargetGeometries = geometries.filter((g) => !g.userData.noOutline);
@@ -1641,6 +1645,251 @@ export class CharacterBuilder {
     bridge.rotateZ(Math.PI * 0.5);
     bridge.translate(0, eyeY + 0.02 * headScale, eyeZ);
     parts.push(apply(bridge));
+
+    return parts;
+  }
+
+  // ==========================================================================
+  // 7-2. 머리카락 더듬이 (바보털) 3D 지오메트리 생성
+  // ==========================================================================
+  createAhogesGeometry(state, headCenterY, headScale, poly) {
+    const ahoges = Array.isArray(state.ahoges) ? state.ahoges : [];
+    if (ahoges.length === 0) return [];
+
+    const parts = [];
+    const ahogeUV = (state.ahogeFollowBody !== false)
+      ? getSwatchUV('body')
+      : getSwatchUV('ahoge');
+
+    // 머리 돔 타원 반지름
+    const rx = 0.88 * headScale;
+    const ry = 0.64 * headScale;
+    const rz = 0.68 * headScale;
+
+    const radSegs = poly ? (poly.isVeryLow ? 8 : (poly.isStandardPoly ? 10 : 14)) : 10;
+    const steps = poly ? (poly.isVeryLow ? 10 : 14) : 12;
+
+    const buildSingleMesh = (ahoge) => {
+      const posX = ahoge.x ?? 0.0;
+      const posZ = ahoge.z ?? 0.05;
+      const size = Math.max(0.2, ahoge.size ?? 1.0);
+      const thickness = Math.max(0.1, ahoge.thickness ?? 1.0);
+      const angle = ((ahoge.angle ?? 10) * Math.PI) / 180;
+      const curve = ahoge.curve ?? 0.65;
+      const rotY = (((ahoge.rotation ?? 0) * Math.PI) / 180);
+
+      // 두피 표면 높이(Y) 계산 (머리 돔 표면 안쪽으로 0.03 깊게 안착)
+      const nx = Math.max(-0.95, Math.min(0.95, posX / rx));
+      const nz = Math.max(-0.95, Math.min(0.95, posZ / rz));
+      const ny = Math.sqrt(Math.max(0.01, 1.0 - nx * nx - nz * nz));
+      const surfaceY = Math.pow(ny, 0.94) * ry + headCenterY;
+
+      // 두피 안쪽 뿌리 위치 설정 (두께가 두꺼워져도 밑동이 공중에 뜨지 않도록 안정적으로 매립)
+      const embedDepth = (0.028 + 0.005 * Math.min(4.0, thickness)) * headScale;
+      const rootPos = new THREE.Vector3(posX, surfaceY - embedDepth, posZ);
+
+      // 실제 애니메이션 바보털 비율: 충분히 길고 높게 호를 그리며 뻗어 나가는 길이 (기존 0.36 -> 0.52)
+      const totalH = 0.52 * headScale * size;
+
+      // 1. 첨부해주신 실제 애니메이션 아호게 사진(media_1791032622625)과 동일하게
+      //    정수리에서 솟아올라 바깥쪽으로 시원하게 퍼져나가는(Flaring outward) 유려한 포물선 스파인 생성
+      //    (끝에서 다시 안쪽으로 모여드는 달걀형/S자 닫힘 왜곡을 원천 차단하고 외측으로 부드럽게 퍼져나감)
+      const localSpine = [];
+      localSpine.push({ x: 0, y: 0, z: 0 });
+
+      const ds = totalH / steps;
+      let curX = 0;
+      let curY = 0;
+
+      for (let i = 1; i <= steps; i++) {
+        const t = (i - 0.5) / steps;
+        // t가 커질수록 외측으로 점진적으로 더 크게 휘어짐 (바깥쪽으로 뻗어 나가는 자연스러운 포물선 곡선)
+        const phi = angle + curve * 1.55 * Math.pow(t, 1.25);
+        curX += Math.sin(phi) * ds;
+        curY += Math.cos(phi) * ds;
+        // Z축: 미세 곡면 깊이감
+        const zProg = i / steps;
+        const curZ = 0.012 * totalH * Math.sin(zProg * Math.PI) * (curve >= 0 ? 1 : -1) * 0.3;
+
+        localSpine.push({ x: curX, y: curY, z: curZ });
+      }
+
+      // 두께 설정: 뭉툭한 동물 꼬리/뿔이 아니라, 가늘고 세련된 "실제 머리카락 한 가닥"의 슬림 프로파일!
+      // 뿌리는 얇고, 중간에 아주 살짝 도톰해졌다가 끝으로 갈수록 섬세한 바늘 끝으로 테이퍼링
+      const wBase = 0.016 * headScale * thickness;
+      const dBase = 0.010 * headScale * thickness;
+
+      // 외곽선 스케일: 가느다란 머리카락 메쉬를 삼키지 않으면서도, 두께 증가 시 자연스럽게 비례 조절
+      const globalThick = state && state.outlineEnabled ? (state.outlineThickness ?? 0.032) : 0.032;
+      const hairThickFactor = Math.min(2.5, Math.max(1.0, Math.sqrt(thickness)));
+      const safeOutlineScale = Math.min(0.35, (0.0055 * hairThickFactor) / Math.max(0.001, globalThick));
+
+      // 회전 변환 행렬 (Y축 회전: rotY)
+      const cosR = Math.cos(rotY);
+      const sinR = Math.sin(rotY);
+      const rotateY = (v) => ({
+        x: v.x * cosR + v.z * sinR,
+        y: v.y,
+        z: -v.x * sinR + v.z * cosR,
+      });
+
+      const positions = [];
+      const uvs = [];
+      const skinIndices = [];
+      const skinWeights = [];
+      const outlineScales = [];
+      const indices = [];
+
+      const ringVertIndices = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const curLoc = localSpine[i];
+        const curWorld = {
+          x: rootPos.x + (curLoc.x * cosR + curLoc.z * sinR),
+          y: rootPos.y + curLoc.y,
+          z: rootPos.z + (-curLoc.x * sinR + curLoc.z * cosR),
+        };
+
+        if (i === steps) {
+          // 끝부분 뾰족한 단일 정점 (가느다란 머리카락 팁)
+          const tipIdx = positions.length / 3;
+          positions.push(curWorld.x, curWorld.y, curWorld.z);
+          uvs.push(ahogeUV.u, ahogeUV.v);
+          skinIndices.push(BONE_INDEX.HEAD, 0, 0, 0);
+          skinWeights.push(1.0, 0, 0, 0);
+          outlineScales.push(safeOutlineScale);
+          ringVertIndices.push([tipIdx]);
+          continue;
+        }
+
+        // 로컬 2D 평면에서 접선(Tloc) 및 직교 법선(Nloc, Bloc) 정밀 계산 (꼬임 0%)
+        let Tloc;
+        if (i === 0) {
+          Tloc = {
+            x: localSpine[1].x - localSpine[0].x,
+            y: localSpine[1].y - localSpine[0].y,
+            z: localSpine[1].z - localSpine[0].z,
+          };
+        } else {
+          Tloc = {
+            x: localSpine[i + 1].x - localSpine[i - 1].x,
+            y: localSpine[i + 1].y - localSpine[i - 1].y,
+            z: localSpine[i + 1].z - localSpine[i - 1].z,
+          };
+        }
+        const tLen = Math.hypot(Tloc.x, Tloc.y, Tloc.z) || 1;
+        Tloc.x /= tLen; Tloc.y /= tLen; Tloc.z /= tLen;
+
+        let Nloc = { x: -Tloc.y, y: Tloc.x, z: 0 };
+        const nLen = Math.hypot(Nloc.x, Nloc.y) || 1;
+        Nloc.x /= nLen; Nloc.y /= nLen;
+
+        let Bloc = {
+          x: Tloc.y * Nloc.z - Tloc.z * Nloc.y,
+          y: Tloc.z * Nloc.x - Tloc.x * Nloc.z,
+          z: Tloc.x * Nloc.y - Tloc.y * Nloc.x,
+        };
+        const bLen = Math.hypot(Bloc.x, Bloc.y, Bloc.z) || 1;
+        Bloc.x /= bLen; Bloc.y /= bLen; Bloc.z /= bLen;
+
+        // 월드 좌표계로 강체 회전
+        const N = rotateY(Nloc);
+        const B = rotateY(Bloc);
+
+        // 머리카락 전용 폭(w) 및 깊이(d) 테이퍼링 프로파일:
+        // 통통한 꼬리가 아니라, 얇고 날렵한 애니 머리카락 한 올
+        const taper = Math.max(0.001, 1.0 - Math.pow(t, 1.25));
+        const swell = 0.010 * headScale * thickness * Math.sin(t * Math.PI);
+        const w = taper * (wBase + swell);
+        const d = taper * dBase;
+
+        const currentRing = [];
+        for (let j = 0; j < radSegs; j++) {
+          const theta = (j / radSegs) * Math.PI * 2;
+          const vx = curWorld.x + N.x * (w * 0.5 * Math.cos(theta)) + B.x * (d * 0.5 * Math.sin(theta));
+          const vy = curWorld.y + N.y * (w * 0.5 * Math.cos(theta)) + B.y * (d * 0.5 * Math.sin(theta));
+          const vz = curWorld.z + N.z * (w * 0.5 * Math.cos(theta)) + B.z * (d * 0.5 * Math.sin(theta));
+
+          const vIdx = positions.length / 3;
+          positions.push(vx, vy, vz);
+          uvs.push(ahogeUV.u, ahogeUV.v);
+          skinIndices.push(BONE_INDEX.HEAD, 0, 0, 0);
+          skinWeights.push(1.0, 0, 0, 0);
+          outlineScales.push(safeOutlineScale);
+          currentRing.push(vIdx);
+        }
+        ringVertIndices.push(currentRing);
+      }
+
+      // 링 간 사각형 면(삼각형 2개씩) 올바른 와인딩(CCW 외향 노멀)으로 연결
+      for (let i = 0; i < steps - 1; i++) {
+        const ringA = ringVertIndices[i];
+        const ringB = ringVertIndices[i + 1];
+        for (let j = 0; j < radSegs; j++) {
+          const nextJ = (j + 1) % radSegs;
+          const a0 = ringA[j];
+          const a1 = ringA[nextJ];
+          const b0 = ringB[j];
+          const b1 = ringB[nextJ];
+
+          // 정점 순서: (a0, a1, b0), (a1, b1, b0) -> 표면 외향 노멀 생성
+          indices.push(a0, a1, b0);
+          indices.push(a1, b1, b0);
+        }
+      }
+
+      // 마지막 링과 끝 팁 정점 연결 (외향 노멀)
+      const lastRing = ringVertIndices[steps - 1];
+      const tipVertexIdx = ringVertIndices[steps][0];
+      for (let j = 0; j < radSegs; j++) {
+        const nextJ = (j + 1) % radSegs;
+        indices.push(lastRing[j], lastRing[nextJ], tipVertexIdx);
+      }
+
+      // 바닥 캡 (두피 결합부 닫음, 외향/하향 노멀)
+      const baseCenterIdx = positions.length / 3;
+      positions.push(rootPos.x, rootPos.y, rootPos.z);
+      uvs.push(ahogeUV.u, ahogeUV.v);
+      skinIndices.push(BONE_INDEX.HEAD, 0, 0, 0);
+      skinWeights.push(1.0, 0, 0, 0);
+      outlineScales.push(safeOutlineScale);
+
+      const firstRing = ringVertIndices[0];
+      for (let j = 0; j < radSegs; j++) {
+        const nextJ = (j + 1) % radSegs;
+        indices.push(baseCenterIdx, firstRing[nextJ], firstRing[j]);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
+      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
+      geo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(outlineScales, 1));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+
+      // 로우폴리곤 패싯 노멀 블렌딩에 의해 뾰족한 끝이나 테두리가 찢어지지 않도록 스무스 노멀 보존
+      geo.userData.keepCustomNormals = true;
+
+      return toSmoothNonIndexed(geo);
+    };
+
+    ahoges.forEach((ahoge) => {
+      parts.push(buildSingleMesh(ahoge));
+      if (ahoge.mirror) {
+        parts.push(
+          buildSingleMesh({
+            ...ahoge,
+            x: -(ahoge.x ?? 0.0),
+            angle: -(ahoge.angle ?? 10),
+            curve: -(ahoge.curve ?? 0.65),
+            rotation: -(ahoge.rotation ?? 0),
+          })
+        );
+      }
+    });
 
     return parts;
   }

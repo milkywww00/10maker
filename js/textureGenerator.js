@@ -19,6 +19,7 @@ export const SWATCH_MAP = {
   earOuter:  { index: 9,  x: 315, y: 740, w: 35, h: 284 },
   white:     { index: 10, x: 350, y: 740, w: 35, h: 284 },
   arm:       { index: 11, x: 385, y: 740, w: 35, h: 284 },
+  ahoge:     { index: 12, x: 420, y: 740, w: 25, h: 284 },
 };
 
 // 하단 중앙: 몸통 배 무늬(Belly Patch) 전용 정면 직교 투영 패치 영역
@@ -442,9 +443,12 @@ export class TextureGenerator {
     const { cx, eyeY } = this.getFaceCoords();
     const scarColor = state.scarColor || '#b55d60';
 
-    const drawSingleScar = (sx, sy, size, angleDeg, type) => {
+    const drawSingleScar = (sx, sy, size, angleDeg, type, isMirror = false) => {
       ctx.save();
       ctx.translate(sx, sy);
+      if (isMirror) {
+        ctx.scale(-1, 1);
+      }
       ctx.rotate(((angleDeg ?? 0) * Math.PI) / 180);
       ctx.scale(size, size);
       ctx.strokeStyle = scarColor;
@@ -482,6 +486,38 @@ export class TextureGenerator {
           ctx.lineTo(ox, 28);
           ctx.stroke();
         });
+      } else if (type === 'burn') {
+        // 화상 흉터: 스케치 기반 오목 다각형 (6점 별빛/스플래시 외곽) + 깔끔하고 얇은 테두리선
+        ctx.save();
+
+        const buildBurnPath = () => {
+          ctx.beginPath();
+          ctx.moveTo(-18, -34);
+          ctx.quadraticCurveTo(0, -15, 16, -36);    // 상단 내측 오목곡선
+          ctx.quadraticCurveTo(14, -10, 36, 4);     // 우상단 내측 오목곡선
+          ctx.quadraticCurveTo(15, 14, 18, 36);     // 우하단 내측 오목곡선
+          ctx.quadraticCurveTo(0, 16, -18, 32);     // 하단 내측 오목곡선
+          ctx.quadraticCurveTo(-15, 10, -36, 0);    // 좌하단 내측 오목곡선
+          ctx.quadraticCurveTo(-15, -11, -18, -34); // 좌상단 내측 오목곡선
+          ctx.closePath();
+        };
+
+        // 1) 내부 면 채움 (부드러운 반투명 화상 틴트)
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = scarColor;
+        buildBurnPath();
+        ctx.fill();
+
+        // 2) 얇고 단정한 테두리선 (기존 7~8px보다 얇은 2.2px)
+        ctx.globalAlpha = 0.90;
+        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = scarColor;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        buildBurnPath();
+        ctx.stroke();
+
+        ctx.restore();
       } else {
         // 기본 'slash' (일자 흉터)
         ctx.lineWidth = 8.0;
@@ -501,11 +537,11 @@ export class TextureGenerator {
       const ang = s.angle ?? -15;
       const sType = s.type || 'slash';
 
-      drawSingleScar(sx, sy, sz, ang, sType);
+      drawSingleScar(sx, sy, sz, ang, sType, false);
 
       if (s.mirror) {
         const sx2 = cx - (s.x ?? -0.40) * 280;
-        drawSingleScar(sx2, sy, sz, -ang, sType);
+        drawSingleScar(sx2, sy, sz, ang, sType, true);
       }
     });
   }
@@ -591,6 +627,8 @@ export class TextureGenerator {
       drawBandaid(cx + eyeSpacing + 78, eyeY + 52, 54, 34, 0.14);
     }
 
+    const outlineColor = state.outlineColor || '#18181b';
+
     // 2. 의료용 하얀 안대 — 사각형(라운드 사각) 부드러운 거즈 패드 + 귀걸이형 깔끔한 탄성 끈
     const drawMedicalEyepatch2D = (dir) => {
       const ex = cx + dir * eyeSpacing;
@@ -609,7 +647,7 @@ export class TextureGenerator {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.lineWidth = olW + 1.2;
-        ctx.strokeStyle = '#18181b';
+        ctx.strokeStyle = outlineColor;
         ctx.stroke();
 
         ctx.beginPath();
@@ -646,7 +684,7 @@ export class TextureGenerator {
       ctx.fillStyle = '#ffffff';
       ctx.fill();
       ctx.lineWidth = olW;
-      ctx.strokeStyle = '#18181b';
+      ctx.strokeStyle = outlineColor;
       ctx.stroke();
 
       // 2) 안쪽 중앙 거즈 쿠션 (부드러운 의료용 거즈 표현)
@@ -667,76 +705,110 @@ export class TextureGenerator {
     if (extras.includes('eyepatch_left')) drawMedicalEyepatch2D(-1);
     if (extras.includes('eyepatch_right')) drawMedicalEyepatch2D(1);
 
-    // 3. 해적 안대 — 매끄러운 블랙 가죽 패치 + 단일 연속 대각선 스트랩
+    // 3. 검은 안대 — 첨부 이미지 형태의 둥글고 볼록한 역삼각형/쉴드형 패치 (하이라이트 및 무늬 없음)
     const drawPiratePatch = (dir) => {
       const ex = cx + dir * eyeSpacing;
-      const ey = eyeY - 4;
-      const patchW = 104;
-      const patchH = 80;
+      const ey = eyeY - 2;
+      const hw = 54;
+      const hh = 46;
 
       ctx.save();
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // 해적 안대 단일 대각선 끈 (동일한 기울기의 일직선 스트랩):
-      // 위쪽 끈은 이마/관자놀이 쪽으로, 아래쪽 끈은 귀/머리뒤 쪽으로 동일 각도로 뻗음
-      const strapAngle = 0.44; // 약 25도 기울기
-      const tanA = Math.tan(strapAngle);
+      // 끈 색상 (캐릭터 윤곽선 색상과 일치하는 테두리 + 어두운 단색 끈)
+      const strapColor = '#18181b';
+      const strapBorder = outlineColor;
 
-      // 끈 그리기 함수 (외곽선 + 가죽톤 채움 2패스)
-      const drawLeatherStrap = (x1, y1, x2, y2) => {
+      // 끈 드로잉 헬퍼
+      const drawCurvedStrap = (p1x, p1y, cpx, cpy, p2x, p2y) => {
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineWidth = olW + 1.4;
-        ctx.strokeStyle = '#18181b';
+        ctx.moveTo(p1x, p1y);
+        ctx.quadraticCurveTo(cpx, cpy, p2x, p2y);
+        ctx.lineWidth = olW + 1.2;
+        ctx.strokeStyle = strapBorder;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineWidth = Math.max(2.0, olW - 1.2);
-        ctx.strokeStyle = '#27272a';
+        ctx.moveTo(p1x, p1y);
+        ctx.quadraticCurveTo(cpx, cpy, p2x, p2y);
+        ctx.lineWidth = Math.max(2.2, olW - 1.0);
+        ctx.strokeStyle = strapColor;
         ctx.stroke();
       };
 
-      // 1) 상단 내측 스트랩: 패치 상단에서 이마/머리선으로 대각선 (과도하게 반대편 눈을 침범하지 않음)
-      const strapInnerStartX = ex - dir * (patchW * 0.32);
-      const strapInnerStartY = ey - patchH * 0.35;
-      const strapInnerLen = 140;
-      const strapInnerEndX = strapInnerStartX - dir * strapInnerLen;
-      const strapInnerEndY = strapInnerStartY - strapInnerLen * tanA;
+      // 1) 외측 끈 (안대 바깥쪽 모서리에서 관자놀이/귀 뒤쪽으로 시원하게 뻗음)
+      const outerStrapStartX = ex + dir * (hw * 0.88);
+      const outerStrapStartY = ey - hh * 0.15;
+      const outerStrapEndX = outerStrapStartX + dir * 190;
+      const outerStrapEndY = outerStrapStartY - 70;
+      const outerStrapCtrlX = outerStrapStartX + dir * 90;
+      const outerStrapCtrlY = outerStrapStartY - 35;
+      drawCurvedStrap(outerStrapStartX, outerStrapStartY, outerStrapCtrlX, outerStrapCtrlY, outerStrapEndX, outerStrapEndY);
 
-      // 2) 하단 외측 스트랩: 패치 하단에서 귀 뒤쪽으로 동일한 기울기로 뻗음
-      const strapOuterStartX = ex + dir * (patchW * 0.32);
-      const strapOuterStartY = ey + patchH * 0.35;
-      const strapOuterLen = 290;
-      const strapOuterEndX = strapOuterStartX + dir * strapOuterLen;
-      const strapOuterEndY = strapOuterStartY + strapOuterLen * tanA;
+      // 2) 내측 끈 (안대 안쪽 모서리에서 콧등 위 이마/반대편 눈썹 위 대각선 상단으로 뻗음 - 코/입을 절대 가로지르지 않음!)
+      const innerStrapStartX = ex - dir * (hw * 0.75);
+      const innerStrapStartY = ey - hh * 0.40;
+      const innerStrapEndX = cx - dir * (eyeSpacing * 0.85);
+      const innerStrapEndY = ey - 125;
+      const innerStrapCtrlX = cx - dir * 10;
+      const innerStrapCtrlY = ey - 85;
+      drawCurvedStrap(innerStrapStartX, innerStrapStartY, innerStrapCtrlX, innerStrapCtrlY, innerStrapEndX, innerStrapEndY);
 
-      drawLeatherStrap(strapInnerStartX, strapInnerStartY, strapInnerEndX, strapInnerEndY);
-      drawLeatherStrap(strapOuterStartX, strapOuterStartY, strapOuterEndX, strapOuterEndY);
-
-      // 검정 해적 안대 패치 본체
+      // 안대 패치 본체 (이미지와 동일한 둥근 역삼각형 / 쉴드 렌즈 형태)
       ctx.save();
       ctx.translate(ex, ey);
-      // 스트랩 방향에 맞게 살짝 회전
-      ctx.rotate(dir * 0.16);
 
-      // 패치 형태: 약간 아래가 부드러운 둥근 쉴드/타원 형태
-      drawRoundRectPath(-patchW * 0.5, -patchH * 0.5, patchW, patchH, 26);
+      ctx.beginPath();
+      // 안대 4대 핵심 제어점 (상단 완만한 볼록 아치 + 하단 둥근 컵)
+      const xOuter = dir * (hw * 0.96);
+      const yOuter = -hh * 0.15;
+      const xTop = dir * (hw * 0.10);
+      const yTop = -hh * 0.82;
+      const xInner = -dir * (hw * 0.88);
+      const yInner = -hh * 0.10;
+      const xBottom = dir * (hw * 0.12);
+      const yBottom = hh * 0.90;
+
+      ctx.moveTo(xOuter, yOuter);
+
+      // 외측 코너 -> 상단 아치: 부드러운 볼록 곡선
+      ctx.bezierCurveTo(
+        dir * (hw * 0.75), -hh * 0.70,
+        dir * (hw * 0.45), -hh * 0.82,
+        xTop, yTop
+      );
+
+      // 상단 아치 -> 내측 코너: 완만하게 코 쪽으로 내려오는 아치
+      ctx.bezierCurveTo(
+        -dir * (hw * 0.35), -hh * 0.82,
+        -dir * (hw * 0.75), -hh * 0.60,
+        xInner, yInner
+      );
+
+      // 내측 코너 -> 하단 라운드 팁: 부드럽게 좁아지는 곡면
+      ctx.bezierCurveTo(
+        -dir * (hw * 0.92), hh * 0.35,
+        -dir * (hw * 0.40), hh * 0.90,
+        xBottom, yBottom
+      );
+
+      // 하단 팁 -> 외측 코너: 볼륨감 있게 올라가는 곡면
+      ctx.bezierCurveTo(
+        dir * (hw * 0.55), hh * 0.90,
+        dir * (hw * 0.98), hh * 0.40,
+        xOuter, yOuter
+      );
+
+      ctx.closePath();
+
+      // 내부: 하이라이트/무늬 없이 완전히 매끄러운 단색 블랙(#18181b)
       ctx.fillStyle = '#18181b';
       ctx.fill();
-      ctx.lineWidth = olW;
-      ctx.strokeStyle = '#18181b';
-      ctx.stroke();
 
-      // 테두리 스티칭/가죽 림 (은은한 디테일, 하이라이트 없음)
-      const rimW = patchW - 14;
-      const rimH = patchH - 14;
-      drawRoundRectPath(-rimW * 0.5, -rimH * 0.5, rimW, rimH, 20);
-      ctx.strokeStyle = '#2f2f35';
-      ctx.lineWidth = Math.max(1.2, olWThin * 0.7);
+      // 테두리: 깔끔한 단일 외곽선
+      ctx.lineWidth = olW;
+      ctx.strokeStyle = outlineColor;
       ctx.stroke();
 
       ctx.restore();
@@ -1297,6 +1369,9 @@ export class TextureGenerator {
       arm: state.armColorCustom
         ? (state.armColor || state.bodyColor || '#ffffff')
         : (state.bodyColor || '#ffffff'),
+      ahoge: state.ahogeFollowBody !== false
+        ? (state.bodyColor || '#ffffff')
+        : (state.ahogeColor || state.bodyColor || '#ffffff'),
     };
 
     Object.entries(SWATCH_MAP).forEach(([key, rect]) => {

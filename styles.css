@@ -19,13 +19,35 @@
 }
 
 body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: 'Pretendard', 'Noto Sans KR', 'Noto Sans CJK KR', 'Noto Sans JP', 'Noto Sans SC', 'Source Han Sans', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Microsoft YaHei', 'PingFang SC', 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-page);
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+html[lang="ko"] body {
+  font-family: 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  letter-spacing: -0.015em;
+}
+
+html[lang="en"] body {
+  font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+html[lang="ja"] body {
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+  letter-spacing: 0;
+}
+
+html[lang="zh"] body {
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'SimHei', sans-serif;
+  letter-spacing: 0;
 }
 
 /* 헤더 */
@@ -84,6 +106,72 @@ body {
   opacity: 0.38;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* 언어 선택기 (세련되고 모던한 인라인 필 형태) */
+.lang-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-line);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.lang-picker-wrap:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
+}
+
+.lang-picker-wrap:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.12);
+}
+
+.lang-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: color 0.12s ease;
+}
+
+.lang-picker-wrap:hover .lang-icon {
+  color: var(--text-primary);
+}
+
+.lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0 16px 0 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  height: 100%;
+}
+
+.lang-arrow {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: transform 0.15s ease, color 0.12s ease;
+}
+
+.lang-picker-wrap:hover .lang-arrow {
+  color: var(--text-primary);
 }
 
 /* 메인 레이아웃 */
@@ -378,6 +466,8 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   text-align: center;
+  word-break: keep-all;
+  line-height: 1.25;
 }
 
 /* 텍스트 칩 리스트 */
@@ -396,6 +486,9 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1.25;
   transition: all 0.12s ease;
 }
 

@@ -62,10 +62,13 @@ export const DEFAULT_STATE = {
   blushOpacity: 0.85,
   blushY: 0.0,
 
-  // 점 & 흉터 (여러 개 동시 추가 및 개별 위치/크기/각도/대칭 커스텀 가능)
+  // 점 & 흉터 & 머리카락 더듬이 (여러 개 동시 추가 및 개별 위치/크기/각도/대칭 커스텀 가능)
   moles: [],
   scars: [],
   scarColor: '#b55d60',
+  ahoges: [],
+  ahogeColor: '#ffffff',
+  ahogeFollowBody: true,
 
   // 장식 (리본 및 추가 소품 각각 다중 선택 가능)
   ribbons: [],
@@ -209,6 +212,8 @@ export const EXTRA_ACC_TYPES = [
   { id: 'square_glasses', name: '사각 안경' },
   { id: 'eyepatch_left', name: '왼쪽 안대' },
   { id: 'eyepatch_right', name: '오른쪽 안대' },
+  { id: 'pirate_patch_left', name: '왼쪽 검은 안대' },
+  { id: 'pirate_patch_right', name: '오른쪽 검은 안대' },
   { id: 'bandaid_nose', name: '코 밴드' },
   { id: 'bandaid_left_cheek', name: '왼쪽 볼 밴드' },
   { id: 'bandaid_right_cheek', name: '오른쪽 볼 밴드' },

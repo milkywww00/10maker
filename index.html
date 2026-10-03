@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="theme-color" content="#f4f4f5" />
   <title>10공방</title>
-  <link rel="stylesheet" href="styles.css?v=31" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=35" />
   <script type="importmap">
     {
       "imports": {
@@ -23,47 +26,65 @@
         <polyline points="3 7 12 12 21 7"></polyline>
         <line x1="12" y1="22" x2="12" y2="12"></line>
       </svg>
-      <h1>10공방</h1>
+      <h1 data-i18n="brand_title">10공방</h1>
     </div>
     <div class="header-controls">
+      <!-- 디자인 시스템과 일체화된 세련된 다국어 선택기 UI -->
+      <div class="lang-picker-wrap" title="Language / 言語 / 语言 / 언어">
+        <svg class="lang-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <select id="selectLanguage" class="lang-select" aria-label="Language selection">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="zh">简体中文</option>
+        </select>
+        <svg class="lang-arrow" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+
       <input type="file" id="inputCharacterFile" accept=".json,.zip,.glb" hidden />
-      <button type="button" id="btnImportCharacter" class="ctrl-btn" title="사이트에서 저장한 캐릭터 파일(.json, .zip, .glb) 불러오기">
+      <button type="button" id="btnImportCharacter" class="ctrl-btn" data-i18n-title="btn_import_title" title="사이트에서 저장한 캐릭터 파일(.json, .zip, .glb) 불러오기">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="17 8 12 3 7 8"></polyline>
           <line x1="12" y1="3" x2="12" y2="15"></line>
         </svg>
-        <span class="label-full">파일 불러오기</span>
-        <span class="label-short">불러오기</span>
+        <span class="label-full" data-i18n="btn_import">파일 불러오기</span>
+        <span class="label-short" data-i18n="btn_import_short">불러오기</span>
       </button>
-      <button type="button" id="btnExportJson" class="ctrl-btn" title="현재 캐릭터 커스텀 데이터(.json) 저장">
+      <button type="button" id="btnExportJson" class="ctrl-btn" data-i18n-title="btn_export_json_title" title="현재 캐릭터 커스텀 데이터(.json) 저장">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
           <polyline points="17 21 17 13 7 13 7 21"></polyline>
           <polyline points="7 3 7 8 15 8"></polyline>
         </svg>
-        <span class="label-full">프로젝트 저장</span>
-        <span class="label-short">저장</span>
+        <span class="label-full" data-i18n="btn_export_json">프로젝트 저장</span>
+        <span class="label-short" data-i18n="btn_export_json_short">저장</span>
       </button>
-      <button type="button" id="btnUndo" class="ctrl-btn" title="되돌리기 Ctrl+Z" disabled>
+      <button type="button" id="btnUndo" class="ctrl-btn" data-i18n-title="btn_undo_title" title="되돌리기 Ctrl+Z" disabled>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="9 14 4 9 9 4"></polyline>
           <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
         </svg>
-        <span class="label-full">되돌리기</span>
-        <span class="label-short">되돌리기</span>
+        <span class="label-full" data-i18n="btn_undo">되돌리기</span>
+        <span class="label-short" data-i18n="btn_undo">되돌리기</span>
       </button>
-      <button type="button" id="btnRedo" class="ctrl-btn" title="다시 실행 Ctrl+Y" disabled>
+      <button type="button" id="btnRedo" class="ctrl-btn" data-i18n-title="btn_redo_title" title="다시 실행 Ctrl+Y" disabled>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 14 20 9 15 4"></polyline>
           <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path>
         </svg>
-        <span class="label-full">다시 실행</span>
-        <span class="label-short">다시 실행</span>
+        <span class="label-full" data-i18n="btn_redo">다시 실행</span>
+        <span class="label-short" data-i18n="btn_redo">다시 실행</span>
       </button>
-      <button type="button" id="btnToggleStudio" class="ctrl-btn studio-toggle-btn" title="다중 캐릭터 배치 및 모션 촬영 스튜디오 모드">
-        <span class="label-full">스튜디오 모드</span>
-        <span class="label-short">스튜디오</span>
+      <button type="button" id="btnToggleStudio" class="ctrl-btn studio-toggle-btn" data-i18n-title="btn_studio_title" title="다중 캐릭터 배치 및 모션 촬영 스튜디오 모드">
+        <span class="label-full" data-i18n="btn_studio">스튜디오 모드</span>
+        <span class="label-short" data-i18n="btn_studio_short">스튜디오</span>
       </button>
       <button type="button" id="btnRandom" class="ctrl-btn">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -73,11 +94,11 @@
           <line x1="15" y1="15" x2="21" y2="21"></line>
           <line x1="4" y1="4" x2="9" y2="9"></line>
         </svg>
-        <span class="label-full">랜덤 조합</span>
-        <span class="label-short">랜덤</span>
+        <span class="label-full" data-i18n="btn_random">랜덤 조합</span>
+        <span class="label-short" data-i18n="btn_random_short">랜덤</span>
       </button>
       <button type="button" id="btnResetCharacter" class="ctrl-btn">
-        <span>초기화</span>
+        <span data-i18n="btn_reset">초기화</span>
       </button>
     </div>
   </header>
@@ -90,8 +111,8 @@
 
         <!-- 스튜디오 모드 상태 배지 (활성 시 표시) -->
         <div class="studio-stage-badge" id="studioStageBadge" hidden>
-          <span id="studioStageCountText">스튜디오 모드 (1명)</span>
-          <button type="button" id="btnExitStudioBadge" class="badge-close-btn" title="단일 편집 모드로 돌아가기">단일 모드로 전환</button>
+          <span id="studioStageCountText" data-i18n="studio_badge_text">스튜디오 모드 (1명)</span>
+          <button type="button" id="btnExitStudioBadge" class="badge-close-btn" data-i18n="studio_badge_exit" title="단일 편집 모드로 돌아가기">단일 모드로 전환</button>
         </div>
 
         <!-- 뷰포트 우측 상단 컨트롤 -->
@@ -101,10 +122,10 @@
               <circle cx="12" cy="12" r="10"></circle>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
-            <span>정면</span>
+            <span data-i18n="vp_front">정면</span>
           </button>
           <button type="button" id="btnQuickDance" class="vp-btn" title="모션 전환">
-            <span>모션 전환</span>
+            <span data-i18n="vp_motion_toggle">모션 전환</span>
           </button>
           <button type="button" id="btnSnapPng" class="vp-btn" title="PNG 이미지 저장">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -112,32 +133,32 @@
               <circle cx="8.5" cy="8.5" r="1.5"></circle>
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
-            <span>캡처</span>
+            <span data-i18n="vp_capture">캡처</span>
           </button>
         </div>
 
-        <div class="viewport-hint">드래그: 회전 · 휠: 확대/축소 · 클릭: 탄성 반응 · 파일 드롭: 불러오기</div>
+        <div class="viewport-hint" data-i18n="vp_hint">드래그: 회전 · 휠: 확대/축소 · 클릭: 탄성 반응 · 파일 드롭: 불러오기</div>
 
         <div class="busy-overlay" id="busyOverlay" hidden>
           <div class="busy-card">
             <div class="spinner"></div>
-            <p id="busyText">처리 중…</p>
+            <p id="busyText" data-i18n="busy_processing">처리 중…</p>
           </div>
         </div>
 
         <div class="media-result-modal" id="mediaResultModal" hidden>
           <div class="media-result-card">
             <div class="media-result-header">
-              <h3 id="mediaResultTitle">녹화 완료</h3>
+              <h3 id="mediaResultTitle" data-i18n="media_result_title">녹화 완료</h3>
               <button type="button" class="modal-close-btn" id="btnCloseMediaModal" aria-label="닫기">✕</button>
             </div>
             <div class="media-result-preview-box">
               <img id="mediaResultImg" src="" alt="결과물 미리보기" />
             </div>
-            <p class="media-result-hint">모바일에서는 이미지를 <strong>길게 꾹 눌러 [사진에 저장]</strong>하시거나 아래 버튼을 누르세요.</p>
+            <p class="media-result-hint" data-i18n="media_result_hint">모바일에서는 이미지를 <strong>길게 꾹 눌러 [사진에 저장]</strong>하시거나 아래 버튼을 누르세요.</p>
             <div class="media-result-actions">
-              <button type="button" id="btnMediaModalShare" class="btn-media-share">공유 / 사진에 저장</button>
-              <button type="button" id="btnMediaModalDownload" class="btn-media-download">다운로드</button>
+              <button type="button" id="btnMediaModalShare" class="btn-media-share" data-i18n="media_result_share">공유 / 사진에 저장</button>
+              <button type="button" id="btnMediaModalDownload" class="btn-media-download" data-i18n="media_result_download">다운로드</button>
             </div>
           </div>
         </div>
@@ -153,8 +174,8 @@
             </svg>
           </div>
           <div class="export-info">
-            <strong>MMD 모델 다운로드 (.pmx)</strong>
-            <small>표준 본 · 다리 IK · 텍스처 · 재불러오기 지원 ZIP</small>
+            <strong data-i18n="export_pmx_title">MMD 모델 다운로드 (.pmx)</strong>
+            <small data-i18n="export_pmx_desc">표준 본 · 다리 IK · 텍스처 · 재불러오기 지원 ZIP</small>
           </div>
         </button>
 
@@ -167,8 +188,8 @@
             </svg>
           </div>
           <div class="export-info">
-            <strong>범용 3D 다운로드 (.glb)</strong>
-            <small>Blender · Unity 호환 및 사이트 재불러오기 지원</small>
+            <strong data-i18n="export_glb_title">범용 3D 다운로드 (.glb)</strong>
+            <small data-i18n="export_glb_desc">Blender · Unity 호환 및 사이트 재불러오기 지원</small>
           </div>
         </button>
       </div>
@@ -177,25 +198,26 @@
     <!-- 우측: 파츠 및 모션 에디터 패널 -->
     <main class="editor-column">
       <div class="character-name-bar">
-        <label for="inputCharacterName" class="character-name-label">캐릭터 이름</label>
+        <label for="inputCharacterName" class="character-name-label" data-i18n="char_name_label">캐릭터 이름</label>
         <input
           type="text"
           id="inputCharacterName"
           class="character-name-input"
           placeholder="이름 입력 (예: 복실이 — 저장 파일명 및 스튜디오에 반영)"
+          data-i18n-placeholder="char_name_placeholder"
           maxlength="36"
           autocomplete="off"
         />
       </div>
 
       <nav class="editor-nav" id="categoryTabs" aria-label="편집 카테고리">
-        <button type="button" class="nav-tab active" data-tab="tab-ears-tail">귀 · 꼬리</button>
-        <button type="button" class="nav-tab" data-tab="tab-face">눈 · 입</button>
-        <button type="button" class="nav-tab" data-tab="tab-colors">색상 · 무늬</button>
-        <button type="button" class="nav-tab" data-tab="tab-deco">홍조 · 점 · 장식</button>
-        <button type="button" class="nav-tab" data-tab="tab-style">체형 · 윤곽선</button>
-        <button type="button" class="nav-tab" data-tab="tab-dance">모션 · 녹화</button>
-        <button type="button" class="nav-tab" data-tab="tab-studio">스튜디오</button>
+        <button type="button" class="nav-tab active" data-tab="tab-ears-tail" data-i18n="tab_ears_tail">귀 · 꼬리</button>
+        <button type="button" class="nav-tab" data-tab="tab-face" data-i18n="tab_features">눈 · 입</button>
+        <button type="button" class="nav-tab" data-tab="tab-colors" data-i18n="tab_colors">색상 · 무늬</button>
+        <button type="button" class="nav-tab" data-tab="tab-deco" data-i18n="tab_accessories">홍조 · 점 · 장식</button>
+        <button type="button" class="nav-tab" data-tab="tab-style" data-i18n="tab_body">체형 · 윤곽선</button>
+        <button type="button" class="nav-tab" data-tab="tab-dance" data-i18n="tab_motion_export">모션 · 녹화</button>
+        <button type="button" class="nav-tab" data-tab="tab-studio" data-i18n="tab_studio">스튜디오</button>
       </nav>
 
       <div class="editor-body">
@@ -203,23 +225,23 @@
         <section class="tab-pane active" id="tab-ears-tail">
           <div class="section-block">
             <div class="section-head">
-              <h2>귀 모양 <span class="count-tag">15</span></h2>
-              <span class="section-desc">동물별 귀 실루엣 선택</span>
+              <h2><span data-i18n="sec_ear_shape">귀 모양</span> <span class="count-tag">15</span></h2>
+              <span class="section-desc" data-i18n="sec_ear_shape_desc">동물별 귀 실루엣 선택</span>
             </div>
             <div class="thumb-grid" id="earGrid"></div>
           </div>
 
           <div class="section-block">
             <div class="section-head">
-              <h2>꼬리 모양 <span class="count-tag">5</span></h2>
-              <span class="section-desc">동그란 · 긴 · 뭉툭한 · 복슬복슬 · 없음</span>
+              <h2><span data-i18n="sec_tail_shape">꼬리 모양</span> <span class="count-tag">5</span></h2>
+              <span class="section-desc" data-i18n="sec_tail_shape_desc">동그란 · 긴 · 뭉툭한 · 복슬복슬 · 없음</span>
             </div>
             <div class="thumb-grid" id="tailGrid"></div>
 
             <div class="option-bar" style="margin-top: 14px;">
               <label class="check-label">
                 <input type="checkbox" id="chkTailTip" />
-                <span>꼬리 끝 / 줄무늬 포인트 색상 활성화</span>
+                <span data-i18n="label_tail_tip_patch">꼬리 끝 / 줄무늬 포인트 색상 활성화</span>
               </label>
               <input type="color" id="colorTailTip" class="color-box" value="#27272a" title="꼬리 포인트 색상" />
             </div>
@@ -230,42 +252,42 @@
         <section class="tab-pane" id="tab-face">
           <div class="section-block">
             <div class="section-head">
-              <h2>눈 모양 <span class="count-tag">9</span></h2>
-              <span class="section-desc">기본 타원 · 진지 · 순둥 · 반감은 · 반짝이 등</span>
+              <h2><span data-i18n="sec_eye_shape">눈 모양</span> <span class="count-tag">9</span></h2>
+              <span class="section-desc" data-i18n="sec_eye_shape_desc">기본 타원 · 진지 · 순둥 · 반감은 · 반짝이 등</span>
             </div>
             <div class="thumb-grid" id="eyeGrid"></div>
           </div>
 
           <div class="section-block">
             <div class="section-head">
-              <h2>속눈썹 옵션</h2>
-              <span class="section-desc">위 속눈썹 · 아래 속눈썹 조합</span>
+              <h2 data-i18n="sec_eyelash">속눈썹 옵션</h2>
+              <span class="section-desc" data-i18n="sec_eyelash_desc">위 속눈썹 · 아래 속눈썹 조합</span>
             </div>
             <div class="chip-list" id="eyelashGrid"></div>
           </div>
 
           <div class="section-block">
             <div class="section-head">
-              <h2>눈썹</h2>
+              <h2 data-i18n="sec_eyebrow">눈썹</h2>
               <div class="inline-pickers">
-                <label>눈썹 색상 <input type="color" id="pickerEyebrowColor" class="color-box" value="#18181b" /></label>
+                <label><span data-i18n="label_eyebrow_color">눈썹 색상</span> <input type="color" id="pickerEyebrowColor" class="color-box" value="#18181b" /></label>
               </div>
             </div>
             <div class="chip-list" id="eyebrowGrid"></div>
 
             <div class="slider-group" style="margin-top: 14px;">
               <div class="slider-item">
-                <label for="sliderEyebrowScale">눈썹 크기</label>
+                <label for="sliderEyebrowScale" data-i18n="label_eyebrow_scale">눈썹 크기</label>
                 <input type="range" id="sliderEyebrowScale" min="0.5" max="2.0" step="0.05" value="1.0" />
                 <span id="valEyebrowScale">1.00</span>
               </div>
               <div class="slider-item">
-                <label for="sliderEyebrowY">눈썹 위치</label>
+                <label for="sliderEyebrowY" data-i18n="label_eyebrow_pos">눈썹 위치</label>
                 <input type="range" id="sliderEyebrowY" min="-1.0" max="1.0" step="0.05" value="0.0" />
                 <span id="valEyebrowY">0.00</span>
               </div>
               <div class="slider-item">
-                <label for="sliderEyebrowSpacing">눈썹 간격</label>
+                <label for="sliderEyebrowSpacing" data-i18n="label_eyebrow_spacing">눈썹 간격</label>
                 <input type="range" id="sliderEyebrowSpacing" min="-1.0" max="1.0" step="0.05" value="0.0" />
                 <span id="valEyebrowSpacing">0.00</span>
               </div>
@@ -274,8 +296,8 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>입 모양 <span class="count-tag">6</span></h2>
-              <span class="section-desc">코와 연결된 입 라인 선택</span>
+              <h2><span data-i18n="sec_mouth">입 모양</span> <span class="count-tag">6</span></h2>
+              <span class="section-desc" data-i18n="sec_mouth_desc">코와 연결된 입 라인 선택</span>
             </div>
             <div class="thumb-grid" id="mouthGrid"></div>
           </div>
@@ -285,7 +307,7 @@
         <section class="tab-pane" id="tab-colors">
           <div class="section-block">
             <div class="section-head">
-              <h2>몸 기본 색상</h2>
+              <h2 data-i18n="sec_body_color">몸 기본 색상</h2>
               <input type="color" id="pickerBodyColor" class="color-box" value="#ffffff" />
             </div>
             <div class="swatch-list" id="paletteBody"></div>
@@ -293,10 +315,10 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>귀 색상</h2>
+              <h2 data-i18n="sec_ear_color">귀 색상</h2>
               <div class="inline-pickers">
-                <label>귀 안쪽 <input type="color" id="pickerInnerEarColor" class="color-box" value="#ffb5c2" /></label>
-                <label id="lblEarColor" style="display: none;">귀 바탕 <input type="color" id="pickerEarColor" class="color-box" value="#ffffff" /></label>
+                <label><span data-i18n="label_inner_ear">귀 안쪽</span> <input type="color" id="pickerInnerEarColor" class="color-box" value="#ffb5c2" /></label>
+                <label id="lblEarColor" style="display: none;"><span data-i18n="label_outer_ear">귀 바탕</span> <input type="color" id="pickerEarColor" class="color-box" value="#ffffff" /></label>
               </div>
             </div>
             <div class="swatch-list" id="paletteInnerEar"></div>
@@ -304,7 +326,7 @@
             <div class="option-bar" style="margin-top: 10px;">
               <label class="check-label">
                 <input type="checkbox" id="chkEarColorCustom" />
-                <span>귀 바탕 색상 따로 지정</span>
+                <span data-i18n="label_ear_custom">귀 바탕 색상 따로 지정</span>
               </label>
             </div>
             <div class="swatch-list" id="paletteEar" style="display: none; margin-top: 8px;"></div>
@@ -312,15 +334,15 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>팔 색상</h2>
+              <h2 data-i18n="sec_arm_color">팔 색상</h2>
               <div class="inline-pickers">
-                <label id="lblArmColor" style="display: none;">팔 색상 <input type="color" id="pickerArmColor" class="color-box" value="#ffffff" /></label>
+                <label id="lblArmColor" style="display: none;"><span data-i18n="sec_arm_color">팔 색상</span> <input type="color" id="pickerArmColor" class="color-box" value="#ffffff" /></label>
               </div>
             </div>
             <div class="option-bar">
               <label class="check-label">
                 <input type="checkbox" id="chkArmColorCustom" />
-                <span>팔 색상 따로 지정</span>
+                <span data-i18n="label_arm_custom">팔 색상 따로 지정</span>
               </label>
             </div>
             <div class="swatch-list" id="paletteArm" style="display: none; margin-top: 8px;"></div>
@@ -328,10 +350,10 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>눈 &amp; 코/입 색상</h2>
+              <h2 data-i18n="sec_eye_color">눈 &amp; 코/입 색상</h2>
               <div class="inline-pickers">
-                <label>눈 <input type="color" id="pickerEyeColor" class="color-box" value="#18181b" /></label>
-                <label>코/입 <input type="color" id="pickerNoseColor" class="color-box" value="#18181b" /></label>
+                <label><span data-i18n="label_eye">눈</span> <input type="color" id="pickerEyeColor" class="color-box" value="#18181b" /></label>
+                <label><span data-i18n="label_nose_mouth">코/입</span> <input type="color" id="pickerNoseColor" class="color-box" value="#18181b" /></label>
               </div>
             </div>
             <div class="swatch-list" id="paletteEye"></div>
@@ -339,15 +361,15 @@
             <div class="option-bar" style="margin-top: 10px;">
               <label class="check-label">
                 <input type="checkbox" id="chkOddEye" />
-                <span>오드아이</span>
+                <span data-i18n="sec_odd_eye">오드아이</span>
               </label>
               <div id="oddEyePickers" class="inline-pickers" style="display: none; align-items: center; gap: 6px;">
                 <button type="button" class="chip-btn chip-sm active" id="btnOddLeft" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; font-size: 0.76rem;">
-                  <span>왼쪽</span>
+                  <span data-i18n="label_left">왼쪽</span>
                   <input type="color" id="pickerEyeColorLeft" class="color-box" value="#18181b" style="width: 22px; height: 18px; padding: 0; border: none; cursor: pointer;" />
                 </button>
                 <button type="button" class="chip-btn chip-sm" id="btnOddRight" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; font-size: 0.76rem;">
-                  <span>오른쪽</span>
+                  <span data-i18n="label_right">오른쪽</span>
                   <input type="color" id="pickerEyeColorRight" class="color-box" value="#3b82f6" style="width: 22px; height: 18px; padding: 0; border: none; cursor: pointer;" />
                 </button>
               </div>
@@ -356,15 +378,7 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>외곽선 선 색상</h2>
-              <input type="color" id="pickerOutlineColor2" class="color-box" value="#18181b" title="외곽선 선 색상" />
-            </div>
-            <div class="swatch-list" id="paletteOutline"></div>
-          </div>
-
-          <div class="section-block">
-            <div class="section-head">
-              <h2>얼굴 무늬 &amp; 부위별 색상</h2>
+              <h2 data-i18n="sec_pattern">얼굴 무늬 &amp; 부위별 색상</h2>
               <input type="color" id="pickerPatternColor" class="color-box" value="#d4c4b4" title="무늬 색상" />
             </div>
             <div class="chip-list" id="patternGrid"></div>
@@ -372,13 +386,13 @@
             <div class="option-bar" style="margin-top: 14px;">
               <label class="check-label">
                 <input type="checkbox" id="chkBellyPatch" />
-                <span>몸통 배 부분 색상 구분</span>
+                <span data-i18n="label_belly_patch">몸통 배 부분 색상 구분</span>
               </label>
               <input type="color" id="pickerBellyColor" class="color-box" value="#fff5eb" />
             </div>
 
             <div class="option-bar" style="margin-top: 8px;">
-              <span>사슴 뿔 색상</span>
+              <span data-i18n="label_antler_color">사슴 뿔 색상</span>
               <input type="color" id="pickerAntlerColor" class="color-box" value="#c69c6d" />
             </div>
           </div>
@@ -388,7 +402,7 @@
         <section class="tab-pane" id="tab-deco">
           <div class="section-block">
             <div class="section-head">
-              <h2>얼굴 꾸밈</h2>
+              <h2 data-i18n="sec_face_deco">얼굴 꾸밈</h2>
             </div>
             <div class="chip-list" id="faceDecoGrid"></div>
 
@@ -397,19 +411,19 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>홍조 이펙트</h2>
+              <h2 data-i18n="sec_blush">홍조 이펙트</h2>
               <input type="color" id="pickerBlushColor" class="color-box" value="#ff8da1" />
             </div>
             <div class="chip-list" id="blushGrid"></div>
 
             <div class="slider-group" style="margin-top: 14px;">
               <div class="slider-item">
-                <label for="sliderBlushScale">홍조 크기</label>
+                <label for="sliderBlushScale" data-i18n="label_blush_scale">홍조 크기</label>
                 <input type="range" id="sliderBlushScale" min="0.5" max="1.8" step="0.05" value="1.0" />
                 <span id="valBlushScale">1.00</span>
               </div>
               <div class="slider-item">
-                <label for="sliderBlushOpacity">홍조 농도</label>
+                <label for="sliderBlushOpacity" data-i18n="label_blush_opacity">홍조 농도</label>
                 <input type="range" id="sliderBlushOpacity" min="0.1" max="1.0" step="0.05" value="0.85" />
                 <span id="valBlushOpacity">85%</span>
               </div>
@@ -418,12 +432,12 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>점</h2>
+              <h2 data-i18n="sec_mole">점</h2>
               <div class="mole-action-btns">
-                <button type="button" class="chip-btn" id="btnAddMole">점 추가</button>
-                <button type="button" class="chip-btn" id="btnAddTearMole">눈물점</button>
-                <button type="button" class="chip-btn" id="btnAddMouthMole">입가점</button>
-                <button type="button" class="chip-btn" id="btnClearMoles">전체 삭제</button>
+                <button type="button" class="chip-btn" id="btnAddMole" data-i18n="btn_add_mole">점 추가</button>
+                <button type="button" class="chip-btn" id="btnAddTearMole" data-i18n="btn_tear_mole">눈물점</button>
+                <button type="button" class="chip-btn" id="btnAddMouthMole" data-i18n="btn_mouth_mole">입가점</button>
+                <button type="button" class="chip-btn" id="btnClearMoles" data-i18n="btn_clear_all">전체 삭제</button>
               </div>
             </div>
             <div id="moleListContainer" class="mole-list-container"></div>
@@ -431,31 +445,55 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>흉터</h2>
+              <h2 data-i18n="sec_scar">흉터</h2>
               <div class="inline-pickers">
-                <label>흉터 색상 <input type="color" id="pickerScarColor" class="color-box" value="#b55d60" /></label>
+                <label><span data-i18n="sec_scar_color">흉터 색상</span> <input type="color" id="pickerScarColor" class="color-box" value="#b55d60" /></label>
               </div>
             </div>
             <div class="mole-action-btns" style="margin-bottom: 10px;">
-              <button type="button" class="chip-btn" id="btnAddSlashScar">일자 흉터</button>
-              <button type="button" class="chip-btn" id="btnAddStitchScar">바늘땀 흉터</button>
-              <button type="button" class="chip-btn" id="btnAddCrossScar">십자 흉터</button>
-              <button type="button" class="chip-btn" id="btnAddDoubleScar">두 줄 흉터</button>
-              <button type="button" class="chip-btn" id="btnClearScars">전체 삭제</button>
+              <button type="button" class="chip-btn" id="btnAddSlashScar" data-i18n="scar_slash">일자 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddStitchScar" data-i18n="scar_stitch">바늘땀 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddCrossScar" data-i18n="scar_cross">십자 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddDoubleScar" data-i18n="scar_double_slash">두 줄 흉터</button>
+              <button type="button" class="chip-btn" id="btnAddBurnScar" data-i18n="scar_burn">화상 흉터</button>
+              <button type="button" class="chip-btn" id="btnClearScars" data-i18n="btn_clear_all">전체 삭제</button>
             </div>
             <div id="scarListContainer" class="mole-list-container"></div>
           </div>
 
           <div class="section-block">
             <div class="section-head">
-              <h2>리본 장식 <span class="count-tag">복수 선택 가능</span></h2>
+              <h2 data-i18n="sec_ahoge">머리카락 더듬이</h2>
+              <div class="inline-pickers">
+                <label>
+                  <span data-i18n="sec_ahoge_color">더듬이 색상</span>
+                  <input type="color" id="pickerAhogeColor" class="color-box" value="#ffffff" />
+                </label>
+                <label class="check-label" style="font-size: 0.76rem;">
+                  <input type="checkbox" id="chkAhogeFollowBody" checked />
+                  <span data-i18n="label_ahoge_match_body">몸 색상과 일치</span>
+                </label>
+              </div>
+            </div>
+            <div class="mole-action-btns" style="margin-bottom: 10px;">
+              <button type="button" class="chip-btn" id="btnAddAhoge" data-i18n="btn_add_ahoge">더듬이 추가</button>
+              <button type="button" class="chip-btn" id="btnAddAhogeTwin" data-i18n="btn_add_ahoge_twin">양갈래 더듬이</button>
+              <button type="button" class="chip-btn" id="btnAddAhogeThin" data-i18n="btn_add_ahoge_thin">가는 더듬이</button>
+              <button type="button" class="chip-btn" id="btnClearAhoges" data-i18n="btn_clear_all">전체 삭제</button>
+            </div>
+            <div id="ahogeListContainer" class="mole-list-container"></div>
+          </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2><span data-i18n="sec_ribbon">리본 장식</span> <span class="count-tag" data-i18n="tag_multi_select">복수 선택 가능</span></h2>
               <input type="color" id="pickerAccessoryColor" class="color-box" value="#ff5e7e" />
             </div>
             <div class="swatch-list" id="paletteAccessory" style="margin-bottom: 12px;"></div>
             <div class="chip-list" id="ribbonGrid"></div>
 
             <div class="slider-item" style="margin-top: 12px;">
-              <label for="sliderRibbonScale">리본 크기</label>
+              <label for="sliderRibbonScale" data-i18n="label_ribbon_scale">리본 크기</label>
               <input type="range" id="sliderRibbonScale" min="0.6" max="1.6" step="0.05" value="1.0" />
               <span id="valRibbonScale">1.00</span>
             </div>
@@ -463,8 +501,8 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>추가 소품 <span class="count-tag">복수 선택 가능</span></h2>
-              <span class="section-desc">안대 · 밴드 · 안경 · 모자 등을 동시에 착용할 수 있습니다</span>
+              <h2><span data-i18n="sec_extra_acc">추가 소품</span> <span class="count-tag" data-i18n="tag_multi_select">복수 선택 가능</span></h2>
+              <span class="section-desc" data-i18n="sec_extra_acc_desc">안대 · 밴드 · 안경 · 모자 등을 동시에 착용할 수 있습니다</span>
             </div>
             <div class="chip-list" id="extraAccGrid"></div>
           </div>
@@ -474,29 +512,30 @@
         <section class="tab-pane" id="tab-style">
           <div class="section-block">
             <div class="section-head">
-              <h2>폴리곤 셰이딩 &amp; 외곽선</h2>
+              <h2 data-i18n="sec_poly_outline">폴리곤 셰이딩 &amp; 외곽선</h2>
             </div>
             <div class="option-bar">
               <label class="check-label">
                 <input type="checkbox" id="chkLowPolyFlat" />
-                <span>각진 폴리곤 면 표시</span>
+                <span data-i18n="label_low_poly_flat">각진 폴리곤 면 표시</span>
               </label>
             </div>
             <div class="chip-list" id="polyDetailGrid" style="margin-top: 10px;">
-              <button type="button" class="chip-btn" data-poly="very_low">로우 폴리곤</button>
-              <button type="button" class="chip-btn active" data-poly="low">표준 폴리곤</button>
-              <button type="button" class="chip-btn" data-poly="medium">하이 폴리곤</button>
+              <button type="button" class="chip-btn" data-poly="very_low" data-i18n="poly_very_low">로우 폴리곤</button>
+              <button type="button" class="chip-btn active" data-poly="low" data-i18n="poly_low">표준 폴리곤</button>
+              <button type="button" class="chip-btn" data-poly="medium" data-i18n="poly_medium">하이 폴리곤</button>
             </div>
 
             <div class="option-bar" style="margin-top: 14px;">
               <label class="check-label">
                 <input type="checkbox" id="chkOutline" checked />
-                <span>외곽선 표시</span>
+                <span data-i18n="label_outline_show">외곽선 표시</span>
               </label>
               <input type="color" id="pickerOutlineColor" class="color-box" value="#18181b" title="외곽선 선 색상" />
             </div>
+            <div class="swatch-list" id="paletteOutline" style="margin-top: 10px;"></div>
             <div class="slider-item" style="margin-top: 8px;">
-              <label for="sliderOutline">외곽선 두께</label>
+              <label for="sliderOutline" data-i18n="label_outline_thick">외곽선 두께</label>
               <input type="range" id="sliderOutline" min="0.005" max="0.055" step="0.002" value="0.032" />
               <span id="valOutline">0.032</span>
             </div>
@@ -504,21 +543,21 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>체형 비율 조절</h2>
+              <h2 data-i18n="sec_body_proportions">체형 비율 조절</h2>
             </div>
             <div class="slider-group">
               <div class="slider-item">
-                <label for="sliderHeadScale">머리 크기</label>
+                <label for="sliderHeadScale" data-i18n="label_head_scale">머리 크기</label>
                 <input type="range" id="sliderHeadScale" min="0.80" max="1.25" step="0.02" value="1.0" />
                 <span id="valHeadScale">1.00</span>
               </div>
               <div class="slider-item">
-                <label for="sliderBodyChubby">몸통 폭</label>
+                <label for="sliderBodyChubby" data-i18n="label_body_chubby">몸통 폭</label>
                 <input type="range" id="sliderBodyChubby" min="0.80" max="1.30" step="0.02" value="1.0" />
                 <span id="valBodyChubby">1.00</span>
               </div>
               <div class="slider-item">
-                <label for="sliderLegLength">다리 길이</label>
+                <label for="sliderLegLength" data-i18n="label_leg_length">다리 길이</label>
                 <input type="range" id="sliderLegLength" min="0.70" max="1.35" step="0.02" value="1.0" />
                 <span id="valLegLength">1.00</span>
               </div>
@@ -530,13 +569,13 @@
         <section class="tab-pane" id="tab-dance">
           <div class="section-block">
             <div class="section-head">
-              <h2>기본 내장 모션</h2>
-              <span class="section-desc">단일 캐릭터 및 스튜디오 공통 모션에 적용</span>
+              <h2 data-i18n="sec_motion_builtin">기본 내장 모션</h2>
+              <span class="section-desc" data-i18n="sec_motion_builtin_desc">단일 캐릭터 및 스튜디오 공통 모션에 적용</span>
             </div>
             <div class="chip-list" id="danceModeGrid"></div>
 
             <div class="slider-item" style="margin-top: 14px;">
-              <label for="sliderDanceSpeed">재생 속도</label>
+              <label for="sliderDanceSpeed" data-i18n="label_dance_speed">재생 속도</label>
               <input type="range" id="sliderDanceSpeed" min="0.4" max="2.0" step="0.1" value="1.0" />
               <span id="valDanceSpeed">1.0x</span>
             </div>
@@ -544,8 +583,8 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2>외부 모션 파일 적용 (.vmd / .fbx)</h2>
-              <span class="section-desc">MMD 모션(.vmd) 및 Mixamo/휴머노이드 모션(.fbx) 모두 지원</span>
+              <h2 data-i18n="sec_motion_external">외부 모션 파일 적용 (.vmd / .fbx)</h2>
+              <span class="section-desc" data-i18n="sec_motion_external_desc">MMD 모션(.vmd) 및 Mixamo/휴머노이드 모션(.fbx) 모두 지원</span>
             </div>
             <div class="motion-dropzone" id="motionDropzone">
               <input type="file" id="inputMotionFile" accept=".vmd,.fbx" hidden />
@@ -555,48 +594,48 @@
                 <line x1="12" y1="18" x2="12" y2="12"></line>
                 <polyline points="9 15 12 12 15 15"></polyline>
               </svg>
-              <p>클릭하거나 <b>.vmd</b> 또는 <b>.fbx</b> 모션 파일을 드롭하세요</p>
-              <small id="motionStatusText">MMD 표준 본(.vmd)과 Mixamo/Humanoid 본(.fbx)을 자동 리타게팅하여 재생합니다.</small>
+              <p data-i18n="dropzone_prompt">클릭하거나 <b>.vmd</b> 또는 <b>.fbx</b> 모션 파일을 드롭하세요</p>
+              <small id="motionStatusText" data-i18n="dropzone_sub">MMD 표준 본(.vmd)과 Mixamo/Humanoid 본(.fbx)을 자동 리타게팅하여 재생합니다.</small>
             </div>
           </div>
 
           <div class="section-block">
             <div class="section-head">
-              <h2>배경 &amp; 맞춤 녹화 (GIF / WebM)</h2>
-              <span class="section-desc">원하는 시간 · 포맷 · 배경 색상으로 모션 촬영</span>
+              <h2 data-i18n="sec_record_custom">배경 &amp; 맞춤 녹화 (GIF / WebM)</h2>
+              <span class="section-desc" data-i18n="sec_record_custom_desc">원하는 시간 · 포맷 · 배경 색상으로 모션 촬영</span>
             </div>
 
             <div class="record-config-grid">
               <div class="record-row">
-                <span class="record-label">저장 포맷</span>
+                <span class="record-label" data-i18n="label_record_format">저장 포맷</span>
                 <div class="chip-list" id="recordFormatGrid">
-                  <button type="button" class="chip-btn active" data-format="gif">GIF 움짤 (.gif)</button>
-                  <button type="button" class="chip-btn" data-format="webm">WebM 영상 (.webm)</button>
+                  <button type="button" class="chip-btn active" data-format="gif" data-i18n="format_gif">GIF 움짤 (.gif)</button>
+                  <button type="button" class="chip-btn" data-format="webm" data-i18n="format_webm">WebM 영상 (.webm)</button>
                 </div>
               </div>
 
               <div class="record-row">
-                <span class="record-label">녹화 시간 (초)</span>
+                <span class="record-label" data-i18n="label_record_time">녹화 시간 (초)</span>
                 <div class="duration-control">
                   <input type="range" id="sliderRecordDuration" min="1" max="15" step="0.5" value="4.0" />
                   <div class="duration-num-wrap">
                     <input type="number" id="inputRecordDuration" min="1" max="15" step="0.5" value="4.0" />
-                    <span>초</span>
+                    <span data-i18n="unit_seconds">초</span>
                   </div>
                 </div>
               </div>
 
               <div class="record-row">
-                <span class="record-label">배경 설정</span>
+                <span class="record-label" data-i18n="label_bg_mode">배경 설정</span>
                 <div class="chip-list" id="bgModeGrid">
-                  <button type="button" class="chip-btn active" data-bg="solid">단색 배경 (선택 색상)</button>
-                  <button type="button" class="chip-btn" data-bg="transparent">투명 배경 (배경 없음)</button>
-                  <button type="button" class="chip-btn" data-bg="grid">기본 모눈 그리드</button>
+                  <button type="button" class="chip-btn active" data-bg="solid" data-i18n="bg_solid">단색 배경 (선택 색상)</button>
+                  <button type="button" class="chip-btn" data-bg="transparent" data-i18n="bg_transparent">투명 배경 (배경 없음)</button>
+                  <button type="button" class="chip-btn" data-bg="grid" data-i18n="bg_grid">기본 모눈 그리드</button>
                 </div>
               </div>
 
               <div class="record-row" id="bgColorPickerRow">
-                <span class="record-label">배경 단색 색상</span>
+                <span class="record-label" data-i18n="label_bg_solid_color">배경 단색 색상</span>
                 <div class="bg-color-controls">
                   <input type="color" id="pickerRecordBgColor" class="color-box" value="#f4f4f5" title="배경 단색 선택" />
                   <div class="swatch-list" id="paletteRecordBg"></div>
@@ -606,20 +645,20 @@
               <div class="option-bar" style="margin-top: 4px;">
                 <label class="check-label">
                   <input type="checkbox" id="chkShowFloor" checked />
-                  <span>바닥 원판 그림자 표시</span>
+                  <span data-i18n="label_shadow_disk">바닥 원판 그림자 표시</span>
                 </label>
               </div>
             </div>
 
             <button type="button" id="btnRecordVideo" class="record-btn" style="margin-top: 14px;">
-              <span id="recordBtnLabel">4.0초 GIF 녹화 (.gif)</span>
+              <span id="recordBtnLabel" data-i18n="btn_record_gif">4.0초 GIF 녹화 (.gif)</span>
             </button>
 
             <div class="info-note">
-              <strong>파일 재불러오기 및 외부 3D 툴 안내</strong>
+              <strong data-i18n="info_reload_title">파일 재불러오기 및 외부 3D 툴 안내</strong>
               <ul>
-                <li><b>사이트 내 다시 불러오기:</b> 상단 <code>파일 불러오기</code> 또는 <code>스튜디오</code> 탭에서 이 사이트로 만든 <code>.json</code>, <code>.glb</code>, <code>.zip(MMD)</code> 파일을 언제든 다시 불러올 수 있습니다.</li>
-                <li><b>MMD (.pmx):</b> 다운로드한 ZIP의 <code>character.pmx</code>와 <code>texture.png</code>를 같은 폴더에 두고 MikuMikuDance에 불러오세요.</li>
+                <li data-i18n="info_reload_desc1"><b>사이트 내 다시 불러오기:</b> 상단 <code>파일 불러오기</code> 또는 <code>스튜디오</code> 탭에서 이 사이트로 만든 <code>.json</code>, <code>.glb</code>, <code>.zip(MMD)</code> 파일을 언제든 다시 불러올 수 있습니다.</li>
+                <li data-i18n="info_reload_desc2"><b>MMD (.pmx):</b> 다운로드한 ZIP의 <code>character.pmx</code>와 <code>texture.png</code>를 같은 폴더에 두고 MikuMikuDance에 불러오세요.</li>
               </ul>
             </div>
           </div>
@@ -630,37 +669,37 @@
           <div class="section-block">
             <div class="section-head">
               <div>
-                <h2>스튜디오 다중 캐릭터 무대 <span class="count-tag" id="studioCountTag">0명</span></h2>
-                <span class="section-desc">제작한 캐릭터 파일을 1개 이상 불러와 개별 또는 단체 모션으로 촬영할 수 있습니다</span>
+                <h2><span data-i18n="sec_studio_title">스튜디오 다중 캐릭터 무대</span> <span class="count-tag" id="studioCountTag">0명</span></h2>
+                <span class="section-desc" data-i18n="sec_studio_desc">제작한 캐릭터 파일을 1개 이상 불러와 개별 또는 단체 모션으로 촬영할 수 있습니다</span>
               </div>
               <label class="check-label">
                 <input type="checkbox" id="chkStudioActive" />
-                <span>스튜디오 모드 활성</span>
+                <span data-i18n="label_studio_active">스튜디오 모드 활성</span>
               </label>
             </div>
 
-            <div class="studio-inactive-notice" id="studioInactiveNotice">
+            <div class="studio-inactive-notice" id="studioInactiveNotice" data-i18n="studio_inactive_notice">
               현재 단일 캐릭터 편집 모드입니다. <b>스튜디오 모드 활성</b>을 켜면 무대 배치 위치·각도·크기 및 캐릭터별 모션을 조정할 수 있습니다.
             </div>
 
             <div id="studioTopControlsWrap" class="studio-controls-wrap studio-locked">
               <div class="studio-add-bar">
                 <button type="button" id="btnStudioAddCurrent" class="studio-action-btn primary" disabled>
-                  <span>현재 에디터 캐릭터 무대 추가</span>
+                  <span data-i18n="btn_add_current_actor">현재 에디터 캐릭터 무대 추가</span>
                 </button>
                 <input type="file" id="inputStudioFiles" accept=".json,.zip,.glb" multiple hidden />
                 <button type="button" id="btnStudioAddFile" class="studio-action-btn" disabled>
-                  <span>파일에서 캐릭터 불러와 추가 (.json / .glb / .zip)</span>
+                  <span data-i18n="btn_add_file_actor">파일에서 캐릭터 불러와 추가 (.json / .glb / .zip)</span>
                 </button>
               </div>
 
               <div class="studio-formation-bar">
-                <span class="formation-label">빠른 대형 정렬 · 동기화</span>
+                <span class="formation-label" data-i18n="label_formations">빠른 대형 정렬 · 동기화</span>
                 <div class="chip-list">
-                  <button type="button" class="chip-btn" id="btnStudioLine" disabled>일렬 배치</button>
-                  <button type="button" class="chip-btn" id="btnStudioVForm" disabled>V자 대형</button>
-                  <button type="button" class="chip-btn" id="btnStudioCircle" disabled>원형 대형</button>
-                  <button type="button" class="chip-btn" id="btnStudioSyncTime" disabled>모션 동시 시작</button>
+                  <button type="button" class="chip-btn" id="btnStudioLine" data-i18n="formation_line" disabled>일렬 배치</button>
+                  <button type="button" class="chip-btn" id="btnStudioVForm" data-i18n="formation_v" disabled>V자 대형</button>
+                  <button type="button" class="chip-btn" id="btnStudioCircle" data-i18n="formation_circle" disabled>원형 대형</button>
+                  <button type="button" class="chip-btn" id="btnStudioSyncTime" data-i18n="formation_sync" disabled>모션 동시 시작</button>
                 </div>
               </div>
             </div>
@@ -668,23 +707,23 @@
 
           <div class="section-block studio-controls-wrap studio-locked" id="studioActorSectionWrap">
             <div class="section-head">
-              <h2>무대 출연 캐릭터 목록</h2>
-              <span class="section-desc">스튜디오 모드가 활성화된 상태에서만 이름·개별 모션·배치 슬라이더를 조정할 수 있습니다</span>
+              <h2 data-i18n="sec_studio_actors">무대 출연 캐릭터 목록</h2>
+              <span class="section-desc" data-i18n="sec_studio_actors_desc">스튜디오 모드가 활성화된 상태에서만 이름·개별 모션·배치 슬라이더를 조정할 수 있습니다</span>
             </div>
             <div id="studioActorList" class="studio-actor-list"></div>
           </div>
 
           <div class="section-block studio-controls-wrap studio-locked" id="studioRecordSectionWrap">
             <div class="section-head">
-              <h2>스튜디오 단체 촬영 바로가기</h2>
-              <span class="section-desc">현재 무대 구도 그대로 움짤(.gif) / 영상(.webm) 녹화</span>
+              <h2 data-i18n="sec_studio_quick_record">스튜디오 단체 촬영 바로가기</h2>
+              <span class="section-desc" data-i18n="sec_studio_quick_record_desc">현재 무대 구도 그대로 움짤(.gif) / 영상(.webm) 녹화</span>
             </div>
             <div class="studio-add-bar">
               <button type="button" id="btnStudioQuickRecord" class="record-btn" style="margin-bottom: 0;" disabled>
-                <span id="studioRecordBtnLabel">현재 스튜디오 무대 4.0초 녹화 (.gif)</span>
+                <span id="studioRecordBtnLabel" data-i18n="btn_studio_record">현재 스튜디오 무대 4.0초 녹화 (.gif)</span>
               </button>
               <button type="button" id="btnStudioGoMotionTab" class="studio-action-btn" disabled>
-                <span>모션 · 배경 · 녹화 시간 상세 설정</span>
+                <span data-i18n="btn_studio_go_motion">모션 · 배경 · 녹화 시간 상세 설정</span>
               </button>
             </div>
           </div>
@@ -693,6 +732,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=31"></script>
+  <script type="module" src="js/app.js?v=42"></script>
 </body>
 </html>

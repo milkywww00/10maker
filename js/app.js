@@ -15,10 +15,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=31';
-import { TextureGenerator } from './textureGenerator.js?v=31';
-import { CharacterBuilder } from './characterBuilder.js?v=31';
-import { CharacterAnimator } from './animator.js?v=31';
+} from './config.js?v=42';
+import { TextureGenerator } from './textureGenerator.js?v=42';
+import { CharacterBuilder } from './characterBuilder.js?v=42';
+import { CharacterAnimator } from './animator.js?v=42';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -27,7 +27,15 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=31';
+} from './exporter.js?v=34';
+import {
+  initI18n,
+  setLanguage,
+  getLanguage,
+  t,
+  getPartName,
+  onLanguageChange,
+} from './i18n.js?v=34';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -370,20 +378,39 @@ function updateRecordButtonLabels() {
   const fmtUpper = recordConfig.format.toUpperCase();
   const ext = `.${recordConfig.format}`;
   const durStr = Number(recordConfig.duration).toFixed(1);
-  const bgDesc =
-    recordConfig.bgMode === 'transparent'
-      ? '투명 배경'
-      : recordConfig.bgMode === 'solid'
-      ? '단색 배경'
-      : '기본 배경';
+  const lang = getLanguage();
+  let bgDesc = '단색 배경';
+  if (recordConfig.bgMode === 'transparent') {
+    bgDesc = lang === 'en' ? 'Transparent' : lang === 'ja' ? '透明背景' : lang === 'zh' ? '透明背景' : '투명 배경';
+  } else if (recordConfig.bgMode === 'solid') {
+    bgDesc = lang === 'en' ? 'Solid Color' : lang === 'ja' ? '単色背景' : lang === 'zh' ? '单色背景' : '단색 배경';
+  } else {
+    bgDesc = lang === 'en' ? 'Grid' : lang === 'ja' ? 'グリッド' : lang === 'zh' ? '网格' : '기본 배경';
+  }
 
   const lbl1 = document.getElementById('recordBtnLabel');
   if (lbl1) {
-    lbl1.textContent = `${durStr}초 ${fmtUpper} 녹화 (${ext} · ${bgDesc})`;
+    if (lang === 'en') {
+      lbl1.textContent = `Record ${durStr}s ${fmtUpper} (${ext} · ${bgDesc})`;
+    } else if (lang === 'ja') {
+      lbl1.textContent = `${durStr}秒 ${fmtUpper} 録画 (${ext} · ${bgDesc})`;
+    } else if (lang === 'zh') {
+      lbl1.textContent = `录制 ${durStr}秒 ${fmtUpper} (${ext} · ${bgDesc})`;
+    } else {
+      lbl1.textContent = `${durStr}초 ${fmtUpper} 녹화 (${ext} · ${bgDesc})`;
+    }
   }
   const lbl2 = document.getElementById('studioRecordBtnLabel');
   if (lbl2) {
-    lbl2.textContent = `현재 스튜디오 무대 ${durStr}초 ${fmtUpper} 녹화 (${ext})`;
+    if (lang === 'en') {
+      lbl2.textContent = `Record Studio Stage ${durStr}s ${fmtUpper} (${ext})`;
+    } else if (lang === 'ja') {
+      lbl2.textContent = `現在のステージ ${durStr}秒 ${fmtUpper} 録画 (${ext})`;
+    } else if (lang === 'zh') {
+      lbl2.textContent = `录制当前舞台 ${durStr}秒 ${fmtUpper} (${ext})`;
+    } else {
+      lbl2.textContent = `현재 스튜디오 무대 ${durStr}초 ${fmtUpper} 녹화 (${ext})`;
+    }
   }
 
   document.querySelectorAll('#recordFormatGrid .chip-btn').forEach((btn) => {
@@ -712,21 +739,44 @@ function setStudioMode(enabled, switchToStudioTab = false) {
 
 function syncStudioStatusUI() {
   const count = studioActors.length;
+  const lang = getLanguage();
+  const studioLabel = t('btn_studio') || '스튜디오 모드';
+  const unit = t('unit_actors') || (lang === 'en' ? ' actors' : '명');
+
   const headerBtn = document.getElementById('btnToggleStudio');
   if (headerBtn) {
     headerBtn.classList.toggle('active', isStudioMode);
-    headerBtn.querySelector('span').textContent = isStudioMode
-      ? `스튜디오 모드 (${count}명)`
-      : '스튜디오 모드';
+    const labelSpan = headerBtn.querySelector('.label-full') || headerBtn.querySelector('span');
+    if (labelSpan) {
+      if (lang === 'en') {
+        labelSpan.textContent = isStudioMode ? `${studioLabel} (${count})` : studioLabel;
+      } else if (lang === 'ko') {
+        labelSpan.textContent = isStudioMode ? `스튜디오 모드 (${count}명)` : '스튜디오 모드';
+      } else {
+        labelSpan.textContent = isStudioMode ? `${studioLabel} (${count}${unit})` : studioLabel;
+      }
+    }
   }
 
   const badge = document.getElementById('studioStageBadge');
   const badgeText = document.getElementById('studioStageCountText');
   if (badge) badge.hidden = !isStudioMode;
-  if (badgeText) badgeText.textContent = `스튜디오 모드 (${count}명 배치됨)`;
+  if (badgeText) {
+    if (lang === 'en') {
+      badgeText.textContent = `Studio Mode (${count} actor${count === 1 ? '' : 's'})`;
+    } else if (lang === 'ja') {
+      badgeText.textContent = `スタジオモード (${count}人配置)`;
+    } else if (lang === 'zh') {
+      badgeText.textContent = `摄影棚模式 (${count}人已就位)`;
+    } else {
+      badgeText.textContent = `스튜디오 모드 (${count}명 배치됨)`;
+    }
+  }
 
   const countTag = document.getElementById('studioCountTag');
-  if (countTag) countTag.textContent = `${count}명`;
+  if (countTag) {
+    countTag.textContent = lang === 'en' ? `${count} actor${count === 1 ? '' : 's'}` : `${count}${unit}`;
+  }
 
   const chkStudio = document.getElementById('chkStudioActive');
   if (chkStudio) chkStudio.checked = isStudioMode;
@@ -1551,9 +1601,10 @@ function initUI() {
   buildMultiChipGroup('extraAccGrid', EXTRA_ACC_TYPES, 'extraAccessories', true);
   buildChipGroup('danceModeGrid', DANCE_MODES, 'danceMode', false, false);
 
-  // 다중 점 & 다중 흉터 추가/삭제 버튼 바인딩
+  // 다중 점 & 다중 흉터 & 머리카락 더듬이 추가/삭제 버튼 바인딩
   initMoleControls();
   initScarControls();
+  initAhogeControls();
 
   // 오드아이 타겟 관리 (왼쪽 눈 / 오른쪽 눈)
   let oddEyeTarget = 'left';
@@ -1640,7 +1691,6 @@ function initUI() {
   bindColorInput('pickerEyeColorRight', 'eyeColorRight');
   bindColorInput('pickerNoseColor', 'noseMouthColor');
   bindColorInput('pickerOutlineColor', 'outlineColor', updateOutlineColor);
-  bindColorInput('pickerOutlineColor2', 'outlineColor', updateOutlineColor);
   bindColorInput('pickerPatternColor', 'patternColor');
   bindColorInput('pickerBellyColor', 'bellyColor');
   bindColorInput('pickerAntlerColor', 'antlerColor');
@@ -1795,6 +1845,97 @@ function initUI() {
   renderStudioActorList();
   syncUIFromState();
   initMediaModal();
+
+  // 다국어(i18n) 설정 및 변경 이벤트 리스너 바인딩
+  document.getElementById('selectLanguage')?.addEventListener('change', (e) => {
+    setLanguage(e.target.value);
+  });
+
+  onLanguageChange(() => {
+    // 1) 카테고리 탭 텍스트 갱신
+    const tabMap = {
+      'tab-ears-tail': 'tab_ears_tail',
+      'tab-face': 'tab_features',
+      'tab-colors': 'tab_colors',
+      'tab-deco': 'tab_accessories',
+      'tab-style': 'tab_body',
+      'tab-dance': 'tab_motion_export',
+      'tab-studio': 'tab_studio',
+    };
+    document.querySelectorAll('#categoryTabs .nav-tab').forEach((tab) => {
+      const key = tabMap[tab.dataset.tab];
+      if (key) tab.textContent = t(key);
+    });
+
+    // 2) 썸네일 카드 라벨 갱신
+    document.querySelectorAll('#earGrid .part-card').forEach((c) => {
+      const title = c.querySelector('.part-title');
+      if (title) title.textContent = getPartName('ear', c.dataset.id);
+    });
+    document.querySelectorAll('#tailGrid .part-card').forEach((c) => {
+      const title = c.querySelector('.part-title');
+      if (title) title.textContent = getPartName('tail', c.dataset.id);
+    });
+    document.querySelectorAll('#eyeGrid .part-card').forEach((c) => {
+      const title = c.querySelector('.part-title');
+      if (title) title.textContent = getPartName('eye', c.dataset.id);
+    });
+    document.querySelectorAll('#mouthGrid .part-card').forEach((c) => {
+      const title = c.querySelector('.part-title');
+      if (title) title.textContent = getPartName('mouth', c.dataset.id);
+    });
+
+    // 3) 칩 버튼 라벨 갱신
+    const updateChips = (gridId, prefix) => {
+      document.querySelectorAll(`#${gridId} .chip-btn`).forEach((b) => {
+        const id = b.dataset.id || b.dataset.poly;
+        if (id) b.textContent = getPartName(prefix, id);
+      });
+    };
+    updateChips('eyelashGrid', 'eyelash');
+    updateChips('eyebrowGrid', 'eyebrow');
+    updateChips('patternGrid', 'pattern');
+    updateChips('faceDecoGrid', 'face');
+    updateChips('blushGrid', 'blush');
+    updateChips('ribbonGrid', 'ribbon');
+    updateChips('extraAccGrid', 'acc');
+    updateChips('danceModeGrid', 'dance');
+    updateChips('polyDetailGrid', 'poly');
+
+    // 4) 점 & 흉터 버튼 라벨 갱신
+    const btnAddMole = document.getElementById('btnAddMole');
+    if (btnAddMole) btnAddMole.textContent = t('btn_add_mole');
+    const btnAddTear = document.getElementById('btnAddTearMole');
+    if (btnAddTear) btnAddTear.textContent = t('btn_tear_mole');
+    const btnAddMouth = document.getElementById('btnAddMouthMole');
+    if (btnAddMouth) btnAddMouth.textContent = t('btn_mouth_mole');
+    const btnClearMoles = document.getElementById('btnClearMoles');
+    if (btnClearMoles) btnClearMoles.textContent = t('btn_clear_all');
+
+    const btnAddSlash = document.getElementById('btnAddSlashScar');
+    if (btnAddSlash) btnAddSlash.textContent = getPartName('scar', 'slash');
+    const btnAddStitch = document.getElementById('btnAddStitchScar');
+    if (btnAddStitch) btnAddStitch.textContent = getPartName('scar', 'stitch');
+    const btnAddCross = document.getElementById('btnAddCrossScar');
+    if (btnAddCross) btnAddCross.textContent = getPartName('scar', 'cross');
+    const btnAddDouble = document.getElementById('btnAddDoubleScar');
+    if (btnAddDouble) btnAddDouble.textContent = getPartName('scar', 'double_slash');
+    const btnAddBurn = document.getElementById('btnAddBurnScar');
+    if (btnAddBurn) btnAddBurn.textContent = getPartName('scar', 'burn');
+    const btnClearScars = document.getElementById('btnClearScars');
+    if (btnClearScars) btnClearScars.textContent = t('btn_clear_all');
+
+    // 5) 동적 카드 및 라벨 재렌더링
+    renderMoleList();
+    renderScarList();
+    renderAhogeList();
+    renderFaceDecoControls();
+    renderStudioActorList();
+    updateRecordButtonLabels();
+    syncStudioStatusUI();
+  });
+
+  initI18n();
 
   // 실행 취소(되돌리기) / 다시 실행 버튼 및 단축키 바인딩
   document.getElementById('btnUndo')?.addEventListener('click', undo);
@@ -2036,10 +2177,13 @@ function renderMoleList() {
   container.innerHTML = '';
 
   const moles = Array.isArray(state.moles) ? state.moles : [];
+  const lang = getLanguage();
   if (moles.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'mole-empty-msg';
-    empty.textContent = '현재 추가된 점이 없습니다. 상단 점 추가 버튼을 눌러 원하는 개수만큼 추가하세요.';
+    empty.textContent = lang === 'ko'
+      ? '현재 추가된 점이 없습니다. 상단 점 추가 버튼을 눌러 원하는 개수만큼 추가하세요.'
+      : t('empty_moles');
     container.appendChild(empty);
     return;
   }
@@ -2051,7 +2195,7 @@ function renderMoleList() {
     const head = document.createElement('div');
     head.className = 'mole-item-head';
     const title = document.createElement('span');
-    title.textContent = `점 #${idx + 1}`;
+    title.textContent = lang === 'ko' ? `점 #${idx + 1}` : `${t('sec_mole')} #${idx + 1}`;
 
     const rightControls = document.createElement('div');
     rightControls.style.display = 'flex';
@@ -2070,13 +2214,13 @@ function renderMoleList() {
       pushHistory();
     });
     const mirrorSpan = document.createElement('span');
-    mirrorSpan.textContent = '좌우 대칭';
+    mirrorSpan.textContent = lang === 'ko' ? '좌우 대칭' : t('label_mirror');
     mirrorLabel.append(mirrorChk, mirrorSpan);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'mole-remove-btn';
-    removeBtn.textContent = '삭제';
+    removeBtn.textContent = lang === 'ko' ? '삭제' : t('btn_delete');
     removeBtn.addEventListener('click', () => {
       state.moles.splice(idx, 1);
       renderMoleList();
@@ -2114,9 +2258,9 @@ function renderMoleList() {
       return row;
     };
 
-    card.appendChild(makeRow('가로 위치 (X)', -0.65, 0.65, 0.02, mole.x ?? 0.32, (v) => { mole.x = v; }));
-    card.appendChild(makeRow('세로 위치 (Y)', -0.45, 0.45, 0.02, mole.y ?? -0.18, (v) => { mole.y = v; }));
-    card.appendChild(makeRow('점 크기', 0.4, 2.2, 0.1, mole.size ?? 1.0, (v) => { mole.size = v; }));
+    card.appendChild(makeRow(lang === 'ko' ? '가로 위치 (X)' : t('label_pos_x'), -0.85, 0.85, 0.02, mole.x ?? 0.32, (v) => { mole.x = v; }));
+    card.appendChild(makeRow(lang === 'ko' ? '세로 위치 (Y)' : t('label_pos_y'), -0.65, 0.65, 0.02, mole.y ?? -0.18, (v) => { mole.y = v; }));
+    card.appendChild(makeRow(lang === 'ko' ? '점 크기' : t('label_mole_size'), 0.4, 2.2, 0.1, mole.size ?? 1.0, (v) => { mole.size = v; }));
 
     container.appendChild(card);
   });
@@ -2158,6 +2302,10 @@ function initScarControls() {
     addScar({ type: 'double_slash', x: 0.40, y: -0.18, size: 0.95, angle: -20 });
   });
 
+  document.getElementById('btnAddBurnScar')?.addEventListener('click', () => {
+    addScar({ type: 'burn', x: -0.38, y: 0.02, size: 1.15, angle: 0 });
+  });
+
   document.getElementById('btnClearScars')?.addEventListener('click', () => {
     state.scars = [];
     renderScarList();
@@ -2172,10 +2320,13 @@ function renderScarList() {
   container.innerHTML = '';
 
   const scars = Array.isArray(state.scars) ? state.scars : [];
+  const lang = getLanguage();
   if (scars.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'mole-empty-msg';
-    empty.textContent = '현재 추가된 흉터가 없습니다. 상단 흉터 버튼을 눌러 원하는 위치와 모양으로 추가하세요.';
+    empty.textContent = lang === 'ko'
+      ? '현재 추가된 흉터가 없습니다. 상단 흉터 버튼을 눌러 원하는 위치와 모양으로 추가하세요.'
+      : t('empty_scars');
     container.appendChild(empty);
     return;
   }
@@ -2185,6 +2336,7 @@ function renderScarList() {
     stitch: '바늘땀 흉터',
     cross: '십자 흉터',
     double_slash: '두 줄 흉터',
+    burn: '화상 흉터',
   };
 
   scars.forEach((scar, idx) => {
@@ -2194,7 +2346,12 @@ function renderScarList() {
     const head = document.createElement('div');
     head.className = 'mole-item-head';
     const title = document.createElement('span');
-    title.textContent = `흉터 #${idx + 1} (${scarTypeLabels[scar.type] || '일자 흉터'})`;
+    const scarLabel = lang === 'ko'
+      ? (scarTypeLabels[scar.type] || '일자 흉터')
+      : getPartName('scar', scar.type, scarTypeLabels[scar.type] || '일자 흉터');
+    title.textContent = lang === 'ko'
+      ? `흉터 #${idx + 1} (${scarLabel})`
+      : `${t('sec_scar')} #${idx + 1} (${scarLabel})`;
 
     const rightControls = document.createElement('div');
     rightControls.style.display = 'flex';
@@ -2213,13 +2370,13 @@ function renderScarList() {
       pushHistory();
     });
     const mirrorSpan = document.createElement('span');
-    mirrorSpan.textContent = '좌우 대칭';
+    mirrorSpan.textContent = lang === 'ko' ? '좌우 대칭' : t('label_mirror');
     mirrorLabel.append(mirrorChk, mirrorSpan);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'mole-remove-btn';
-    removeBtn.textContent = '삭제';
+    removeBtn.textContent = lang === 'ko' ? '삭제' : t('btn_delete');
     removeBtn.addEventListener('click', () => {
       state.scars.splice(idx, 1);
       renderScarList();
@@ -2258,23 +2415,220 @@ function renderScarList() {
     };
 
     card.appendChild(
-      makeRow('가로 위치 (X)', -0.65, 0.65, 0.02, scar.x ?? -0.40, (v) => v.toFixed(2), (v) => {
+      makeRow(lang === 'ko' ? '가로 위치 (X)' : t('label_pos_x'), -1.2, 1.2, 0.02, scar.x ?? -0.40, (v) => v.toFixed(2), (v) => {
         scar.x = v;
       })
     );
     card.appendChild(
-      makeRow('세로 위치 (Y)', -0.45, 0.45, 0.02, scar.y ?? -0.04, (v) => v.toFixed(2), (v) => {
+      makeRow(lang === 'ko' ? '세로 위치 (Y)' : t('label_pos_y'), -0.65, 0.65, 0.02, scar.y ?? -0.04, (v) => v.toFixed(2), (v) => {
         scar.y = v;
       })
     );
     card.appendChild(
-      makeRow('흉터 크기', 0.4, 2.2, 0.1, scar.size ?? 1.0, (v) => v.toFixed(2), (v) => {
+      makeRow(lang === 'ko' ? '흉터 크기' : t('label_scar_size'), 0.4, 2.2, 0.1, scar.size ?? 1.0, (v) => v.toFixed(2), (v) => {
         scar.size = v;
       })
     );
     card.appendChild(
-      makeRow('기울기 각도', -90, 90, 5, scar.angle ?? -12, (v) => `${Math.round(v)}°`, (v) => {
+      makeRow(lang === 'ko' ? '기울기 각도' : t('label_angle'), -90, 90, 5, scar.angle ?? -12, (v) => `${Math.round(v)}°`, (v) => {
         scar.angle = v;
+      })
+    );
+
+    container.appendChild(card);
+  });
+}
+
+// 머리카락 더듬이 (바보털) 추가/삭제 및 개별 더듬이 컨트롤 렌더링
+function initAhogeControls() {
+  const addAhoge = (preset) => {
+    if (!Array.isArray(state.ahoges)) state.ahoges = [];
+    state.ahoges.push({
+      id: `ahoge_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      x: preset.x ?? 0.0,
+      z: preset.z ?? 0.05,
+      size: preset.size ?? 1.0,
+      thickness: preset.thickness ?? 1.0,
+      angle: preset.angle ?? 10,
+      rotation: preset.rotation ?? 0,
+      curve: preset.curve ?? 0.65,
+      mirror: Boolean(preset.mirror),
+    });
+    renderAhogeList();
+    rebuildCharacterMesh(false);
+    pushHistory();
+  };
+
+  document.getElementById('btnAddAhoge')?.addEventListener('click', () => {
+    const count = (state.ahoges || []).length;
+    const offset = (count % 3) * 0.03;
+    addAhoge({ x: +(0.0 + offset).toFixed(2), z: 0.05, size: 1.0, thickness: 1.0, angle: 10, rotation: 0, curve: 0.65, mirror: false });
+  });
+
+  document.getElementById('btnAddAhogeTwin')?.addEventListener('click', () => {
+    addAhoge({ x: 0.04, z: 0.05, size: 0.9, thickness: 0.95, angle: 18, rotation: 0, curve: 0.60, mirror: true });
+  });
+
+  document.getElementById('btnAddAhogeThin')?.addEventListener('click', () => {
+    addAhoge({ x: 0.0, z: 0.05, size: 1.0, thickness: 0.6, angle: 10, rotation: 0, curve: 0.70, mirror: false });
+  });
+
+  document.getElementById('btnClearAhoges')?.addEventListener('click', () => {
+    state.ahoges = [];
+    renderAhogeList();
+    rebuildCharacterMesh(false);
+    pushHistory();
+  });
+
+  const pickerAhogeColor = document.getElementById('pickerAhogeColor');
+  pickerAhogeColor?.addEventListener('input', (e) => {
+    state.ahogeColor = e.target.value;
+    refreshTextureOnly();
+  });
+  pickerAhogeColor?.addEventListener('change', () => {
+    pushHistory();
+  });
+
+  const chkAhogeFollowBody = document.getElementById('chkAhogeFollowBody');
+  chkAhogeFollowBody?.addEventListener('change', (e) => {
+    state.ahogeFollowBody = e.target.checked;
+    if (pickerAhogeColor) {
+      pickerAhogeColor.disabled = state.ahogeFollowBody;
+    }
+    refreshTextureOnly();
+    pushHistory();
+  });
+}
+
+function renderAhogeList() {
+  const container = document.getElementById('ahogeListContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const ahoges = Array.isArray(state.ahoges) ? state.ahoges : [];
+  const lang = getLanguage();
+  if (ahoges.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'mole-empty-msg';
+    empty.textContent = lang === 'ko'
+      ? '현재 추가된 더듬이가 없습니다. 상단 더듬이 추가 버튼을 눌러 원하는 모양으로 추가하세요.'
+      : t('empty_ahoges');
+    container.appendChild(empty);
+    return;
+  }
+
+  ahoges.forEach((ahoge, idx) => {
+    const card = document.createElement('div');
+    card.className = 'mole-item-card';
+
+    const head = document.createElement('div');
+    head.className = 'mole-item-head';
+    const title = document.createElement('span');
+    title.textContent = lang === 'ko'
+      ? `더듬이 #${idx + 1}`
+      : `${t('sec_ahoge')} #${idx + 1}`;
+
+    const rightControls = document.createElement('div');
+    rightControls.style.display = 'flex';
+    rightControls.style.alignItems = 'center';
+    rightControls.style.gap = '10px';
+
+    const mirrorLabel = document.createElement('label');
+    mirrorLabel.className = 'check-label';
+    mirrorLabel.style.fontSize = '0.76rem';
+    const mirrorChk = document.createElement('input');
+    mirrorChk.type = 'checkbox';
+    mirrorChk.checked = Boolean(ahoge.mirror);
+    mirrorChk.addEventListener('change', (e) => {
+      ahoge.mirror = e.target.checked;
+      rebuildCharacterMesh(false);
+      pushHistory();
+    });
+    const mirrorSpan = document.createElement('span');
+    mirrorSpan.textContent = lang === 'ko' ? '좌우 대칭' : t('label_mirror');
+    mirrorLabel.append(mirrorChk, mirrorSpan);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'mole-remove-btn';
+    removeBtn.textContent = lang === 'ko' ? '삭제' : t('btn_delete');
+    removeBtn.addEventListener('click', () => {
+      state.ahoges.splice(idx, 1);
+      renderAhogeList();
+      rebuildCharacterMesh(false);
+      pushHistory();
+    });
+
+    rightControls.append(mirrorLabel, removeBtn);
+    head.append(title, rightControls);
+    card.appendChild(head);
+
+    const makeRow = (labelText, min, max, step, val, fmtFn, onChange) => {
+      const row = document.createElement('div');
+      row.className = 'slider-item';
+      const lbl = document.createElement('label');
+      lbl.textContent = labelText;
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = min;
+      input.max = max;
+      input.step = step;
+      input.value = val;
+      const valSpan = document.createElement('span');
+      valSpan.textContent = fmtFn(Number(val));
+      input.addEventListener('input', (e) => {
+        const num = parseFloat(e.target.value);
+        valSpan.textContent = fmtFn(num);
+        onChange(num);
+        rebuildCharacterMesh(false);
+      });
+      input.addEventListener('change', () => {
+        pushHistory();
+      });
+      row.append(lbl, input, valSpan);
+      return row;
+    };
+
+    // 1. 가로 위치 (X)
+    card.appendChild(
+      makeRow(lang === 'ko' ? '가로 위치 (X)' : t('label_pos_x'), -0.35, 0.35, 0.02, ahoge.x ?? 0.0, (v) => v.toFixed(2), (v) => {
+        ahoge.x = v;
+      })
+    );
+    // 2. 앞뒤 위치 (Z)
+    card.appendChild(
+      makeRow(lang === 'ko' ? '앞뒤 위치 (Z)' : t('label_pos_z'), -0.25, 0.25, 0.02, ahoge.z ?? 0.05, (v) => v.toFixed(2), (v) => {
+        ahoge.z = v;
+      })
+    );
+    // 3. 더듬이 크기
+    card.appendChild(
+      makeRow(lang === 'ko' ? '더듬이 크기' : t('label_ahoge_size'), 0.4, 2.2, 0.05, ahoge.size ?? 1.0, (v) => v.toFixed(2), (v) => {
+        ahoge.size = v;
+      })
+    );
+    // 4. 더듬이 두께
+    card.appendChild(
+      makeRow(lang === 'ko' ? '더듬이 두께' : t('label_ahoge_thickness'), 0.2, 6.0, 0.05, ahoge.thickness ?? 1.0, (v) => v.toFixed(2), (v) => {
+        ahoge.thickness = v;
+      })
+    );
+    // 5. 기울기 각도
+    card.appendChild(
+      makeRow(lang === 'ko' ? '기울기 각도' : t('label_angle'), -80, 80, 5, ahoge.angle ?? 10, (v) => `${Math.round(v)}°`, (v) => {
+        ahoge.angle = v;
+      })
+    );
+    // 6. 회전 각도 (수평 360도 회전)
+    card.appendChild(
+      makeRow(lang === 'ko' ? '회전 각도' : t('label_rotation'), -180, 180, 5, ahoge.rotation ?? 0, (v) => `${Math.round(v)}°`, (v) => {
+        ahoge.rotation = v;
+      })
+    );
+    // 7. 휘어짐 정도
+    card.appendChild(
+      makeRow(lang === 'ko' ? '휘어짐 정도' : t('label_ahoge_curve'), -1.0, 1.0, 0.05, ahoge.curve ?? 0.65, (v) => v.toFixed(2), (v) => {
+        ahoge.curve = v;
       })
     );
 
@@ -2297,7 +2651,7 @@ function renderFaceDecoControls() {
   }
 
   const decoNames = {
-    beard: '수염',
+    whiskers: '수염',
     shadow: '그림자',
     sweat: '삐질',
     wrinkle: '주름',
@@ -2305,12 +2659,16 @@ function renderFaceDecoControls() {
     anger: '화남',
   };
 
+  const lang = getLanguage();
+
   decos.forEach((type) => {
     if (!state.faceDecoSettings[type]) {
       state.faceDecoSettings[type] = { scale: 1.0, x: 0.0, y: 0.0 };
     }
     const cfg = state.faceDecoSettings[type];
-    const name = decoNames[type] || type;
+    const name = lang === 'ko'
+      ? (decoNames[type] || type)
+      : getPartName('face', type, decoNames[type] || type);
 
     const card = document.createElement('div');
     card.className = 'mole-item-card';
@@ -2318,12 +2676,14 @@ function renderFaceDecoControls() {
     const head = document.createElement('div');
     head.className = 'mole-item-head';
     const title = document.createElement('span');
-    title.textContent = `${name} 조절`;
+    title.textContent = lang === 'ko'
+      ? `${name} 조절`
+      : `${name} (${t('label_control')})`;
 
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'mole-remove-btn';
-    resetBtn.textContent = '초기화';
+    resetBtn.textContent = lang === 'ko' ? '초기화' : t('btn_reset');
     resetBtn.addEventListener('click', () => {
       cfg.scale = 1.0;
       cfg.x = 0.0;
@@ -2341,7 +2701,9 @@ function renderFaceDecoControls() {
       info.className = 'mole-empty-msg';
       info.style.padding = '8px 4px';
       info.style.textAlign = 'left';
-      info.textContent = '눈 모양에 맞춰 자동으로 눈동자 안쪽에 흰색 영역이 생성됩니다.';
+      info.textContent = lang === 'ko'
+        ? '눈 모양에 맞춰 자동으로 눈동자 안쪽에 흰색 영역이 생성됩니다.'
+        : t('shock_desc');
       card.appendChild(info);
     } else {
       const makeRow = (labelText, min, max, step, val, onChange) => {
@@ -2371,17 +2733,17 @@ function renderFaceDecoControls() {
       };
 
       card.appendChild(
-        makeRow('크기', 0.4, 2.5, 0.05, cfg.scale ?? 1.0, (v) => {
+        makeRow(lang === 'ko' ? '크기' : t('label_face_deco_scale'), 0.4, 2.5, 0.05, cfg.scale ?? 1.0, (v) => {
           cfg.scale = v;
         })
       );
       card.appendChild(
-        makeRow('좌우 위치', -1.2, 1.2, 0.02, cfg.x ?? 0.0, (v) => {
+        makeRow(lang === 'ko' ? '좌우 위치' : t('label_face_deco_x'), -1.2, 1.2, 0.02, cfg.x ?? 0.0, (v) => {
           cfg.x = v;
         })
       );
       card.appendChild(
-        makeRow('상하 위치', -1.2, 1.2, 0.02, cfg.y ?? 0.0, (v) => {
+        makeRow(lang === 'ko' ? '상하 위치' : t('label_face_deco_y'), -1.2, 1.2, 0.02, cfg.y ?? 0.0, (v) => {
           cfg.y = v;
         })
       );
@@ -2501,6 +2863,7 @@ function syncUIFromState() {
 
   renderMoleList();
   renderScarList();
+  renderAhogeList();
   renderFaceDecoControls();
 
   const setVal = (id, v) => {
@@ -2521,11 +2884,16 @@ function syncUIFromState() {
   setVal('pickerAntlerColor', state.antlerColor);
   setVal('pickerBlushColor', state.blushColor);
   setVal('pickerScarColor', state.scarColor || '#b55d60');
+  setVal('pickerAhogeColor', state.ahogeColor || '#ffffff');
   setVal('pickerAccessoryColor', state.accessoryColor);
   setVal('colorTailTip', state.tailTipColor);
   setVal('pickerEyebrowColor', state.eyebrowColor || '#18181b');
   setVal('pickerOutlineColor', state.outlineColor || '#18181b');
-  setVal('pickerOutlineColor2', state.outlineColor || '#18181b');
+
+  const chkAhogeFollowBody = document.getElementById('chkAhogeFollowBody');
+  if (chkAhogeFollowBody) chkAhogeFollowBody.checked = state.ahogeFollowBody !== false;
+  const pickerAhogeColor = document.getElementById('pickerAhogeColor');
+  if (pickerAhogeColor) pickerAhogeColor.disabled = state.ahogeFollowBody !== false;
 
   // 오드아이 체크박스 및 피커 가시성
   const chkOddEye = document.getElementById('chkOddEye');
@@ -2666,7 +3034,7 @@ function randomizeCharacter() {
 
   state.scars = [];
   if (Math.random() < 0.25) {
-    const scarTypes = ['slash', 'stitch', 'cross', 'double_slash'];
+    const scarTypes = ['slash', 'stitch', 'cross', 'double_slash', 'burn'];
     state.scars.push({
       id: `scar_${Date.now()}`,
       type: pick(scarTypes),
@@ -2675,6 +3043,21 @@ function randomizeCharacter() {
       size: 1.0,
       angle: Math.round((Math.random() - 0.5) * 40),
       mirror: false,
+    });
+  }
+
+  state.ahoges = [];
+  if (Math.random() < 0.35) {
+    const isTwin = Math.random() < 0.3;
+    state.ahoges.push({
+      id: `ahoge_${Date.now()}`,
+      x: isTwin ? 0.05 : +(Math.random() * 0.1 - 0.05).toFixed(2),
+      z: 0.05,
+      size: +(0.85 + Math.random() * 0.4).toFixed(2),
+      thickness: +(0.4 + Math.random() * 1.0).toFixed(2),
+      angle: isTwin ? 22 : Math.round((Math.random() - 0.5) * 40),
+      curve: +(0.3 + Math.random() * 0.4).toFixed(2),
+      mirror: isTwin,
     });
   }
 
