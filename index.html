@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;600;700;800&family=Noto+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=36" />
+  <link rel="stylesheet" href="styles.css?v=37" />
   <script type="importmap">
     {
       "imports": {
@@ -20,6 +20,7 @@
 </head>
 <body>
   <header class="studio-header">
+    <div class="header-left">
     <div class="brand-title">
       <svg class="brand-logo" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2"></polygon>
@@ -27,6 +28,11 @@
         <line x1="12" y1="22" x2="12" y2="12"></line>
       </svg>
       <h1 data-i18n="brand_title">10공방</h1>
+    </div>
+    <nav class="header-links" aria-label="바로가기">
+      <a class="header-link" href="https://x.com/noun_cms" target="_blank" rel="noopener noreferrer" title="제작자 계정 바로가기">제작자 계정 ↗</a>
+      <a class="header-link" href="https://milkywww00.github.io/10makercream/" target="_blank" rel="noopener noreferrer" title="스쿱 타워 바로가기">스쿱 타워 ↗</a>
+    </nav>
     </div>
     <div class="header-controls">
       <!-- 디자인 시스템과 일체화된 세련된 다국어 선택기 UI -->
@@ -46,24 +52,7 @@
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </div>
-
-      <a class="ctrl-btn ctrl-link" href="https://x.com/noun_cms" target="_blank" rel="noopener noreferrer" title="제작자 계정 바로가기">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-        <span>제작자 계정</span>
-      </a>
-      <a class="ctrl-btn ctrl-link" href="https://milkywww00.github.io/10makercream/" target="_blank" rel="noopener noreferrer" title="스쿱 타워 바로가기">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-        <span>스쿱 타워</span>
-      </a>
-
+      <span class="hdr-divider" aria-hidden="true"></span>
       <input type="file" id="inputCharacterFile" accept=".json,.zip,.glb" hidden />
       <button type="button" id="btnImportCharacter" class="ctrl-btn" data-i18n-title="btn_import_title" title="사이트에서 저장한 캐릭터 파일(.json, .zip, .glb) 불러오기">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -83,7 +72,8 @@
         <span class="label-full" data-i18n="btn_export_json">프로젝트 저장</span>
         <span class="label-short" data-i18n="btn_export_json_short">저장</span>
       </button>
-      <button type="button" id="btnUndo" class="ctrl-btn" data-i18n-title="btn_undo_title" title="되돌리기 Ctrl+Z" disabled>
+      <span class="hdr-divider" aria-hidden="true"></span>
+      <button type="button" id="btnUndo" class="ctrl-btn icon-only" data-i18n-title="btn_undo_title" title="되돌리기 Ctrl+Z" disabled>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="9 14 4 9 9 4"></polyline>
           <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
@@ -91,7 +81,7 @@
         <span class="label-full" data-i18n="btn_undo">되돌리기</span>
         <span class="label-short" data-i18n="btn_undo">되돌리기</span>
       </button>
-      <button type="button" id="btnRedo" class="ctrl-btn" data-i18n-title="btn_redo_title" title="다시 실행 Ctrl+Y" disabled>
+      <button type="button" id="btnRedo" class="ctrl-btn icon-only" data-i18n-title="btn_redo_title" title="다시 실행 Ctrl+Y" disabled>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="15 14 20 9 15 4"></polyline>
           <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path>
@@ -99,6 +89,7 @@
         <span class="label-full" data-i18n="btn_redo">다시 실행</span>
         <span class="label-short" data-i18n="btn_redo">다시 실행</span>
       </button>
+      <span class="hdr-divider" aria-hidden="true"></span>
       <button type="button" id="btnToggleStudio" class="ctrl-btn studio-toggle-btn" data-i18n-title="btn_studio_title" title="다중 캐릭터 배치 및 모션 촬영 스튜디오 모드">
         <span class="label-full" data-i18n="btn_studio">스튜디오 모드</span>
         <span class="label-short" data-i18n="btn_studio_short">스튜디오</span>
