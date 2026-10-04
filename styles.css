@@ -97,6 +97,12 @@ html[lang="zh"] body {
   transition: all 0.12s ease;
 }
 
+.ctrl-link {
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .ctrl-btn:hover {
   border-color: var(--border-strong);
   background: var(--bg-subtle);
