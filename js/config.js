@@ -15,6 +15,13 @@ export const DEFAULT_STATE = {
   tailTipColor: '#27272a',
   antlerColor: '#c69c6d',
   accessoryColor: '#ff5e7e',
+  beretColor: '#ef476f',
+  starPinColor: '#ffd166',
+  glassesColor: '#18181b',
+  squareGlassesColor: '#18181b',
+  crownColor: '#ffd166',
+  devilHornsColor: '#18181b',
+  monocleColor: '#ffd166',
 
   // 오드아이 (양 눈 색 다르게)
   oddEye: false,
@@ -28,10 +35,15 @@ export const DEFAULT_STATE = {
   armColor: '#ffffff',
 
   // 파츠 종류
-  earType: 'cat',          // 15종
-  tailType: 'long',        // 5종
+  earType: 'cat',          // 16종
+  maneColor: '#f97316',
+  tailType: 'long',        // 10종
   tailTipEnabled: false,
+  wingType: 'none',        // 3종 (none, angel, devil)
   eyeType: 'default',      // 9종
+  eyeHighlight: false,
+  eyeHighlightType: 'double',
+  eyeHighlightSize: 1.0,
   eyelashType: 'none',     // 4종
   eyebrowType: 'none',
   eyebrows: [],
@@ -39,7 +51,11 @@ export const DEFAULT_STATE = {
   eyebrowScale: 1.0,
   eyebrowY: 0.0,
   eyebrowSpacing: 0.0,
-  mouthType: 'cat_w',      // 6종
+  mouthType: 'cat_w',      // 7종
+  beakColor: '#fbbf24',
+  beakFollowBody: false,
+  beakSize: 1.0,
+  beakY: 0.0,
 
   // 얼굴 무늬 & 꾸밈 & 점 & 홍조
   patternType: 'none',
@@ -90,7 +106,7 @@ export const DEFAULT_STATE = {
   danceSpeed: 1.0,
 };
 
-// 15종 귀 모양 (스케치 2번 완벽 반영)
+// 16종 귀 모양 (스케치 2번 완벽 반영)
 export const EAR_TYPES = [
   { id: 'cat', name: '고양이', hasInner: true },
   { id: 'fox', name: '여우', hasInner: true },
@@ -106,16 +122,29 @@ export const EAR_TYPES = [
   { id: 'axolotl', name: '아홀로틀', hasInner: false },
   { id: 'raccoon', name: '너구리', hasInner: true },
   { id: 'otter', name: '수달', hasInner: true },
+  { id: 'lion', name: '사자', hasInner: true },
   { id: 'none', name: '귀 없음', hasInner: false },
 ];
 
-// 5종 꼬리 모양
+// 10종 꼬리 모양
 export const TAIL_TYPES = [
   { id: 'round', name: '동그란 꼬리', sub: '토끼·곰형' },
   { id: 'long', name: '긴 꼬리', sub: '고양이·강아지형' },
-  { id: 'stubby', name: '뭉툭한 꼬리', sub: '너구리형' },
+  { id: 'stubby', name: '뭉툭한 꼬리', sub: '기본 뭉툭형' },
   { id: 'fluffy', name: '복슬복슬 꼬리', sub: '여우형' },
+  { id: 'hamster', name: '햄스터 꼬리', sub: '작고 짧은 방울형' },
+  { id: 'mouse', name: '쥐 꼬리', sub: '가늘고 긴 와이어형' },
+  { id: 'lion', name: '사자 꼬리', sub: '끝부분 털술형' },
+  { id: 'raccoon', name: '너구리 꼬리', sub: '줄무늬 물방울형' },
+  { id: 'mermaid', name: '인어 꼬리', sub: '고래 지느러미형' },
   { id: 'none', name: '꼬리 없음', sub: '기본' },
+];
+
+// 3종 날개 모양 (천사 날개, 악마 날개)
+export const WING_TYPES = [
+  { id: 'none', name: '날개 없음' },
+  { id: 'angel', name: '천사 날개' },
+  { id: 'devil', name: '악마 날개' },
 ];
 
 // 9종 눈 모양 (스케치 4번 순서 및 형태)
@@ -131,6 +160,14 @@ export const EYE_TYPES = [
   { id: 'flat_line', name: '일자' },
 ];
 
+// 안광 (눈 하이라이트) 종류
+export const EYE_HIGHLIGHT_TYPES = [
+  { id: 'double', name: '초롱초롱' },
+  { id: 'circle', name: '기본 점' },
+  { id: 'sparkle', name: '별빛' },
+  { id: 'heart', name: '하트' },
+];
+
 // 속눈썹 옵션
 export const EYELASH_TYPES = [
   { id: 'none', name: '없음' },
@@ -139,7 +176,7 @@ export const EYELASH_TYPES = [
   { id: 'both', name: '위 + 아래 모두' },
 ];
 
-// 6종 입 모양 (스케치 3번)
+// 7종 입 모양 (스케치 3번 + 새 부리)
 export const MOUTH_TYPES = [
   { id: 'line_t', name: '일자입' },
   { id: 'cat_w', name: '고양이입' },
@@ -147,6 +184,7 @@ export const MOUTH_TYPES = [
   { id: 'smile_u', name: '미소입' },
   { id: 'nose_only', name: '코만 표시' },
   { id: 'open_d', name: '벌린입' },
+  { id: 'beak', name: '새 부리' },
 ];
 
 // 눈썹 종류
@@ -217,6 +255,12 @@ export const EXTRA_ACC_TYPES = [
   { id: 'bandaid_nose', name: '코 밴드' },
   { id: 'bandaid_left_cheek', name: '왼쪽 볼 밴드' },
   { id: 'bandaid_right_cheek', name: '오른쪽 볼 밴드' },
+  { id: 'dressing_nose', name: '코 드레싱' },
+  { id: 'dressing_left_cheek', name: '왼쪽 볼 드레싱' },
+  { id: 'dressing_right_cheek', name: '오른쪽 볼 드레싱' },
+  { id: 'halo', name: '헤일로' },
+  { id: 'devil_horns', name: '악마 뿔' },
+  { id: 'monocle', name: '모노클' },
 ];
 
 // 춤 프리셋 (이모티콘 제거)

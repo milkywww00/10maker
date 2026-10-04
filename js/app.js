@@ -1,10 +1,12 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {
   DEFAULT_STATE,
   EAR_TYPES,
   TAIL_TYPES,
+  WING_TYPES,
   EYE_TYPES,
+  EYE_HIGHLIGHT_TYPES,
   EYELASH_TYPES,
   MOUTH_TYPES,
   EYEBROW_TYPES,
@@ -15,10 +17,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=42';
-import { TextureGenerator } from './textureGenerator.js?v=42';
-import { CharacterBuilder } from './characterBuilder.js?v=42';
-import { CharacterAnimator } from './animator.js?v=42';
+} from './config.js?v=74';
+import { TextureGenerator } from './textureGenerator.js?v=74';
+import { CharacterBuilder } from './characterBuilder.js?v=74';
+import { CharacterAnimator } from './animator.js?v=74';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -27,7 +29,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=34';
+} from './exporter.js?v=74';
 import {
   initI18n,
   setLanguage,
@@ -35,7 +37,7 @@ import {
   t,
   getPartName,
   onLanguageChange,
-} from './i18n.js?v=34';
+} from './i18n.js?v=74';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -48,6 +50,10 @@ function sanitizeCharacterState(raw) {
     }
   }
   clean.characterName = typeof raw.characterName === 'string' ? raw.characterName : '';
+  clean.wingType = typeof raw.wingType === 'string' ? raw.wingType : 'none';
+  clean.eyeHighlight = raw.eyeHighlight !== undefined ? Boolean(raw.eyeHighlight) : true;
+  clean.eyeHighlightType = typeof raw.eyeHighlightType === 'string' ? raw.eyeHighlightType : 'double';
+  clean.eyeHighlightSize = typeof raw.eyeHighlightSize === 'number' ? raw.eyeHighlightSize : 1.0;
   clean.eyebrowType = typeof raw.eyebrowType === 'string'
     ? raw.eyebrowType
     : (Array.isArray(raw.eyebrows) && raw.eyebrows[0]) || 'none';
@@ -1333,11 +1339,43 @@ function drawEarThumb(canvasEl, earId) {
     ctx.restore();
   });
 
+  if (earId === 'lion') {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#18181b';
+    ctx.lineWidth = 2.4;
+    for (let i = 0; i < 14; i++) {
+      const angle = (i / 14) * Math.PI * 2;
+      const mx = Math.cos(angle) * 23;
+      const my = Math.sin(angle) * 16.5;
+      ctx.beginPath();
+      ctx.arc(mx, my, 5.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // 호빵형 머리 윤곽
   ctx.beginPath();
   ctx.ellipse(0, 0, 22, 15.5, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+
+  if (earId === 'lion') {
+    [-1, 1].forEach((dir) => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(dir * 16, -11.5, 6.0, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(dir * 16, -11.5, 3.2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
 
   if (earId === 'dog') {
     [-1, 1].forEach((dir) => {
@@ -1405,6 +1443,68 @@ function drawTailThumb(canvasEl, tailId) {
     ctx.quadraticCurveTo(6, 16, -18, 10);
     ctx.fill();
     ctx.stroke();
+  } else if (tailId === 'hamster') {
+    // 햄스터: 짧고 앙증맞은 동그란 꼬투리
+    ctx.beginPath();
+    ctx.arc(0, 3, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (tailId === 'mouse') {
+    // 쥐: 가늘고 길게 휘어지는 와이어 꼬리
+    ctx.beginPath();
+    ctx.moveTo(-18, 14);
+    ctx.bezierCurveTo(-6, 14, 2, -14, 17, -14);
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+  } else if (tailId === 'lion') {
+    // 사자: 가느다란 줄기 + 끝부분 털술
+    ctx.beginPath();
+    ctx.moveTo(-16, 12);
+    ctx.bezierCurveTo(-6, 12, -2, -2, 6, -4);
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(5, -4);
+    ctx.quadraticCurveTo(11, -15, 18, -13);
+    ctx.quadraticCurveTo(20, -3, 11, 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (tailId === 'raccoon') {
+    // 너구리: 몸통 쪽(아래)이 좁고 뾰족하며 위로 갈수록 도톰하고 둥근 형태 + 가로 줄무늬
+    ctx.beginPath();
+    ctx.moveTo(-3, 17);
+    ctx.quadraticCurveTo(-16, 5, -14, -8);
+    ctx.quadraticCurveTo(-11, -21, 0, -21);
+    ctx.quadraticCurveTo(11, -21, 14, -8);
+    ctx.quadraticCurveTo(16, 5, 3, 17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-11, 2);
+    ctx.lineTo(11, 2);
+    ctx.moveTo(-13, -7);
+    ctx.lineTo(13, -7);
+    ctx.stroke();
+  } else if (tailId === 'mermaid') {
+    // 인어: 우아하고 대칭적인 고래/인어 플루크 지느러미
+    ctx.beginPath();
+    ctx.moveTo(-4, 16);
+    ctx.quadraticCurveTo(-3, 6, -10, 0);
+    ctx.quadraticCurveTo(-18, -4, -22, -14);
+    ctx.quadraticCurveTo(-12, -11, 0, -4);
+    ctx.quadraticCurveTo(12, -11, 22, -14);
+    ctx.quadraticCurveTo(18, -4, 10, 0);
+    ctx.quadraticCurveTo(3, 6, 4, 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // 중앙 줄기 라인
+    ctx.beginPath();
+    ctx.moveTo(0, 16);
+    ctx.lineTo(0, 3);
+    ctx.stroke();
   } else {
     ctx.strokeStyle = '#adb5bd';
     ctx.beginPath();
@@ -1415,6 +1515,121 @@ function drawTailThumb(canvasEl, tailId) {
   }
 
   ctx.restore();
+}
+
+function drawWingThumb(canvasEl, wingId) {
+  const ctx = canvasEl.getContext('2d');
+  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  const w = canvasEl.width;
+  const h = canvasEl.height;
+
+  if (wingId === 'none') {
+    ctx.strokeStyle = '#a1a1aa';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, 14, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 10, h / 2 - 10);
+    ctx.lineTo(w / 2 + 10, h / 2 + 10);
+    ctx.stroke();
+    return;
+  }
+
+  if (wingId === 'angel') {
+    [-1, 1].forEach((dir) => {
+      ctx.save();
+      ctx.translate(w / 2 + dir * 6, h / 2 + 6);
+      ctx.scale(dir * 0.72, 0.72);
+
+      ctx.beginPath();
+      ctx.moveTo(2, 4);
+      ctx.bezierCurveTo(6, -14, 16, -26, 32, -32);
+      ctx.bezierCurveTo(28, -22, 23, -16, 26, -14);
+      ctx.bezierCurveTo(23, -8, 18, -3, 21, 0);
+      ctx.bezierCurveTo(18, 4, 14, 8, 8, 8);
+      ctx.bezierCurveTo(3, 8, 1, 4, 2, 1);
+      ctx.bezierCurveTo(3, -2, 7, -1, 7, 1);
+      ctx.bezierCurveTo(7, 3, 5, 4, 3, 3);
+      ctx.closePath();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.strokeStyle = '#27272a';
+      ctx.lineWidth = 2.6;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(10, -6);
+      ctx.bezierCurveTo(16, -12, 22, -18, 26, -22);
+      ctx.strokeStyle = 'rgba(39, 39, 42, 0.35)';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      ctx.restore();
+    });
+    return;
+  }
+
+  if (wingId === 'devil') {
+    [-1, 1].forEach((dir) => {
+      ctx.save();
+      ctx.translate(w / 2 + dir * 6, h / 2 + 6);
+      ctx.scale(dir * 0.72, 0.72);
+
+      ctx.beginPath();
+      ctx.moveTo(2, 2);
+      ctx.lineTo(10, -20);
+      ctx.bezierCurveTo(20, -22, 32, -18, 42, -10);
+      ctx.bezierCurveTo(38, -3, 34, 3, 30, 8);
+      ctx.bezierCurveTo(25, 12, 20, 16, 14, 20);
+      ctx.bezierCurveTo(10, 12, 6, 6, 2, 2);
+      ctx.closePath();
+
+      ctx.fillStyle = '#c51b29';
+      ctx.fill();
+
+      ctx.strokeStyle = '#18181b';
+      ctx.lineWidth = 3.2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(2, 2);
+      ctx.lineTo(10, -20);
+      ctx.bezierCurveTo(20, -22, 32, -18, 42, -10);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(10, -20);
+      ctx.lineTo(9, -29);
+      ctx.stroke();
+
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(10, -20);
+      ctx.lineTo(30, 8);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(10, -20);
+      ctx.lineTo(14, 20);
+      ctx.stroke();
+
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(42, -10);
+      ctx.bezierCurveTo(38, -3, 34, 3, 30, 8);
+      ctx.bezierCurveTo(25, 12, 20, 16, 14, 20);
+      ctx.bezierCurveTo(10, 12, 6, 6, 2, 2);
+      ctx.stroke();
+
+      ctx.restore();
+    });
+    return;
+  }
 }
 
 function drawEyeThumb(canvasEl, eyeId) {
@@ -1529,6 +1744,36 @@ function initUI() {
     tailGrid.appendChild(card);
   });
 
+  // 날개 3종 그리드 (천사 날개, 악마 날개)
+  const wingGrid = document.getElementById('wingGrid');
+  if (wingGrid) {
+    WING_TYPES.forEach((item) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'part-card';
+      card.dataset.id = item.id;
+
+      const c = document.createElement('canvas');
+      c.width = 90;
+      c.height = 56;
+      c.className = 'thumb-canvas';
+      drawWingThumb(c, item.id);
+
+      const label = document.createElement('span');
+      label.className = 'part-title';
+      label.textContent = item.name;
+
+      card.append(c, label);
+      card.addEventListener('click', () => {
+        state.wingType = item.id;
+        syncUIFromState();
+        rebuildCharacterMesh(true);
+        pushHistory();
+      });
+      wingGrid.appendChild(card);
+    });
+  }
+
   // 눈 9종 그리드
   const eyeGrid = document.getElementById('eyeGrid');
   EYE_TYPES.forEach((item) => {
@@ -1558,6 +1803,11 @@ function initUI() {
     eyeGrid.appendChild(card);
   });
 
+  // 안광 (눈 하이라이트) 옵션
+  buildChipGroup('eyeHighlightGrid', EYE_HIGHLIGHT_TYPES, 'eyeHighlightType', false);
+  bindCheckbox('chkEyeHighlight', 'eyeHighlight', false);
+  bindSlider('sliderEyeHighlightSize', 'eyeHighlightSize', 'valEyeHighlightSize', (v) => v.toFixed(2), false);
+
   // 속눈썹 옵션
   buildChipGroup('eyelashGrid', EYELASH_TYPES, 'eyelashType', false);
 
@@ -1584,9 +1834,14 @@ function initUI() {
 
     card.append(c, label);
     card.addEventListener('click', () => {
+      const prevMouth = state.mouthType;
       state.mouthType = item.id;
       syncUIFromState();
-      refreshTextureOnly();
+      if (prevMouth === 'beak' || item.id === 'beak') {
+        rebuildCharacterMesh(false);
+      } else {
+        refreshTextureOnly();
+      }
       animator.triggerPoke();
       pushHistory();
     });
@@ -1698,7 +1953,39 @@ function initUI() {
   bindColorInput('pickerScarColor', 'scarColor');
   bindColorInput('pickerAccessoryColor', 'accessoryColor');
   bindColorInput('colorTailTip', 'tailTipColor');
+  bindColorInput('pickerManeColor', 'maneColor');
   bindColorInput('pickerEyebrowColor', 'eyebrowColor');
+  bindColorInput('pickerBeretColor', 'beretColor');
+  bindColorInput('pickerStarPinColor', 'starPinColor');
+  bindColorInput('pickerGlassesColor', 'glassesColor');
+  bindColorInput('pickerSquareGlassesColor', 'squareGlassesColor');
+  bindColorInput('pickerCrownColor', 'crownColor');
+  bindColorInput('pickerDevilHornsColor', 'devilHornsColor');
+  bindColorInput('pickerMonocleColor', 'monocleColor');
+
+  // 새 부리 크기 / 상하 위치 (3D 메쉬 재생성)
+  bindSlider('sliderBeakSize', 'beakSize', 'valBeakSize', (v) => v.toFixed(2), true);
+  bindSlider('sliderBeakY', 'beakY', 'valBeakY', (v) => v.toFixed(2), true);
+
+  const handleBeakColorInput = (hex) => {
+    state.beakColor = hex;
+    const el = document.getElementById('pickerBeakColor');
+    if (el && el.value !== hex) el.value = hex;
+    refreshTextureOnly();
+  };
+
+  const pickerBeakColorEl = document.getElementById('pickerBeakColor');
+  pickerBeakColorEl?.addEventListener('input', (e) => handleBeakColorInput(e.target.value));
+  pickerBeakColorEl?.addEventListener('change', () => pushHistory());
+
+  const handleBeakFollowBody = (checked) => {
+    state.beakFollowBody = checked;
+    syncUIFromState();
+    refreshTextureOnly();
+    pushHistory();
+  };
+
+  document.getElementById('chkBeakFollowBody')?.addEventListener('change', (e) => handleBeakFollowBody(e.target.checked));
 
   bindCheckbox('chkTailTip', 'tailTipEnabled', true);
   bindCheckbox('chkBellyPatch', 'bellyPatch', true);
@@ -1876,6 +2163,10 @@ function initUI() {
       const title = c.querySelector('.part-title');
       if (title) title.textContent = getPartName('tail', c.dataset.id);
     });
+    document.querySelectorAll('#wingGrid .part-card').forEach((c) => {
+      const title = c.querySelector('.part-title');
+      if (title) title.textContent = getPartName('wing', c.dataset.id);
+    });
     document.querySelectorAll('#eyeGrid .part-card').forEach((c) => {
       const title = c.querySelector('.part-title');
       if (title) title.textContent = getPartName('eye', c.dataset.id);
@@ -1892,6 +2183,7 @@ function initUI() {
         if (id) b.textContent = getPartName(prefix, id);
       });
     };
+    updateChips('eyeHighlightGrid', 'hl');
     updateChips('eyelashGrid', 'eyelash');
     updateChips('eyebrowGrid', 'eyebrow');
     updateChips('patternGrid', 'pattern');
@@ -1933,6 +2225,7 @@ function initUI() {
     renderStudioActorList();
     updateRecordButtonLabels();
     syncStudioStatusUI();
+    syncUIFromState();
   });
 
   initI18n();
@@ -2849,7 +3142,9 @@ function syncUIFromState() {
 
   markActive('#earGrid .part-card', state.earType);
   markActive('#tailGrid .part-card', state.tailType);
+  markActive('#wingGrid .part-card', state.wingType || 'none');
   markActive('#eyeGrid .part-card', state.eyeType);
+  markActive('#eyeHighlightGrid .chip-btn', state.eyeHighlightType || 'double');
   markActive('#eyelashGrid .chip-btn', state.eyelashType);
   markActive('#eyebrowGrid .chip-btn', state.eyebrowType);
   markActive('#mouthGrid .part-card', state.mouthType);
@@ -2889,11 +3184,51 @@ function syncUIFromState() {
   setVal('colorTailTip', state.tailTipColor);
   setVal('pickerEyebrowColor', state.eyebrowColor || '#18181b');
   setVal('pickerOutlineColor', state.outlineColor || '#18181b');
+  setVal('pickerBeakColor', state.beakColor || '#fbbf24');
+  setVal('pickerBeakColorTabColors', state.beakColor || '#fbbf24');
+  setVal('pickerManeColor', state.maneColor || '#f97316');
+  const rowMane = document.getElementById('rowLionManeColor');
+  if (rowMane) rowMane.style.display = state.earType === 'lion' ? 'flex' : 'none';
+  const rowAntler = document.getElementById('rowAntlerColor');
+  if (rowAntler) rowAntler.style.display = state.earType === 'deer2' ? 'flex' : 'none';
+
+  // 개별 소품별 커스텀 색상 행 표시 및 동기화
+  const extras = Array.isArray(state.extraAccessories) ? state.extraAccessories : [];
+  const setAccColorRow = (rowId, pickerId, colorVal, accId) => {
+    const row = document.getElementById(rowId);
+    if (row) row.style.display = extras.includes(accId) ? 'flex' : 'none';
+    setVal(pickerId, colorVal);
+  };
+  setAccColorRow('rowBeretColor', 'pickerBeretColor', state.beretColor || '#ef476f', 'beret');
+  setAccColorRow('rowStarPinColor', 'pickerStarPinColor', state.starPinColor || '#ffd166', 'star_pin');
+  setAccColorRow('rowGlassesColor', 'pickerGlassesColor', state.glassesColor || '#18181b', 'glasses');
+  setAccColorRow('rowSquareGlassesColor', 'pickerSquareGlassesColor', state.squareGlassesColor || '#18181b', 'square_glasses');
+  setAccColorRow('rowCrownColor', 'pickerCrownColor', state.crownColor || '#ffd166', 'crown');
+  setAccColorRow('rowDevilHornsColor', 'pickerDevilHornsColor', state.devilHornsColor || '#18181b', 'devil_horns');
+  setAccColorRow('rowMonocleColor', 'pickerMonocleColor', state.monocleColor || '#ffd166', 'monocle');
 
   const chkAhogeFollowBody = document.getElementById('chkAhogeFollowBody');
   if (chkAhogeFollowBody) chkAhogeFollowBody.checked = state.ahogeFollowBody !== false;
   const pickerAhogeColor = document.getElementById('pickerAhogeColor');
   if (pickerAhogeColor) pickerAhogeColor.disabled = state.ahogeFollowBody !== false;
+
+  const isBeak = state.mouthType === 'beak';
+  const beakOptionsCard = document.getElementById('beakOptionsCard');
+  if (beakOptionsCard) beakOptionsCard.style.display = isBeak ? 'block' : 'none';
+  const sBeakSize = document.getElementById('sliderBeakSize');
+  if (sBeakSize) sBeakSize.value = state.beakSize ?? 1.0;
+  const vBeakSize = document.getElementById('valBeakSize');
+  if (vBeakSize) vBeakSize.textContent = Number(state.beakSize ?? 1.0).toFixed(2);
+  const sBeakY = document.getElementById('sliderBeakY');
+  if (sBeakY) sBeakY.value = state.beakY ?? 0.0;
+  const vBeakY = document.getElementById('valBeakY');
+  if (vBeakY) vBeakY.textContent = Number(state.beakY ?? 0.0).toFixed(2);
+
+  const chkBeakFollowBody = document.getElementById('chkBeakFollowBody');
+  if (chkBeakFollowBody) chkBeakFollowBody.checked = Boolean(state.beakFollowBody);
+
+  const pickerBeakColor = document.getElementById('pickerBeakColor');
+  if (pickerBeakColor) pickerBeakColor.disabled = Boolean(state.beakFollowBody);
 
   // 오드아이 체크박스 및 피커 가시성
   const chkOddEye = document.getElementById('chkOddEye');
@@ -2929,6 +3264,7 @@ function syncUIFromState() {
   setSlider('sliderBlushScale', 'valBlushScale', state.blushScale, (v) => v.toFixed(2));
   setSlider('sliderBlushOpacity', 'valBlushOpacity', state.blushOpacity, (v) => `${Math.round(v * 100)}%`);
   setSlider('sliderRibbonScale', 'valRibbonScale', state.ribbonScale, (v) => v.toFixed(2));
+  setSlider('sliderEyeHighlightSize', 'valEyeHighlightSize', state.eyeHighlightSize ?? 1.0, (v) => v.toFixed(2));
   setSlider('sliderOutline', 'valOutline', state.outlineThickness, (v) => v.toFixed(3));
   setSlider('sliderHeadScale', 'valHeadScale', state.headScale, (v) => v.toFixed(2));
   setSlider('sliderBodyChubby', 'valBodyChubby', state.bodyChubby, (v) => v.toFixed(2), true);
@@ -2939,6 +3275,9 @@ function syncUIFromState() {
     const el = document.getElementById(id);
     if (el) el.checked = !!v;
   };
+  setChk('chkEyeHighlight', !!state.eyeHighlight);
+  const hlOptions = document.getElementById('eyeHighlightOptions');
+  if (hlOptions) hlOptions.style.display = state.eyeHighlight ? 'block' : 'none';
   setChk('chkTailTip', state.tailTipEnabled);
   setChk('chkBellyPatch', state.bellyPatch);
   setChk('chkLowPolyFlat', state.lowPolyFlat);
@@ -2946,9 +3285,16 @@ function syncUIFromState() {
 
   const quickDanceBtn = document.getElementById('btnQuickDance');
   if (quickDanceBtn) {
-    const modeObj = DANCE_MODES.find((d) => d.id === state.danceMode);
-    quickDanceBtn.textContent =
-      state.danceMode === 'idle' ? '모션 전환' : `${modeObj ? modeObj.name : '외부 모션 재생 중'}`;
+    if (state.danceMode === 'idle') {
+      const label = t('vp_motion_toggle') || '모션 전환';
+      quickDanceBtn.textContent = label;
+      quickDanceBtn.title = label;
+    } else {
+      const modeObj = DANCE_MODES.find((d) => d.id === state.danceMode);
+      const label = getPartName('dance', state.danceMode, modeObj ? modeObj.name : 'Dance');
+      quickDanceBtn.textContent = label;
+      quickDanceBtn.title = label;
+    }
     quickDanceBtn.classList.toggle('active-dance', state.danceMode !== 'idle');
   }
 }
@@ -2957,6 +3303,7 @@ function randomizeCharacter() {
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
   state.earType = pick(EAR_TYPES).id;
   state.tailType = pick(TAIL_TYPES).id;
+  state.wingType = Math.random() < 0.28 ? pick(WING_TYPES.filter((w) => w.id !== 'none')).id : 'none';
   state.eyeType = pick(EYE_TYPES).id;
   state.eyelashType = pick(EYELASH_TYPES).id;
   state.mouthType = pick(MOUTH_TYPES).id;

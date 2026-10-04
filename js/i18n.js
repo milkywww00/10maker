@@ -24,14 +24,25 @@ export const PART_NAMES = {
     ear_axolotl: '아홀로틀',
     ear_raccoon: '너구리',
     ear_otter: '수달',
+    ear_lion: '사자',
     ear_none: '귀 없음',
 
-    // 꼬리 (5종)
+    // 꼬리 (10종)
     tail_round: '동그란 꼬리',
     tail_long: '긴 꼬리',
     tail_stubby: '뭉툭한 꼬리',
     tail_fluffy: '복슬복슬 꼬리',
+    tail_hamster: '햄스터 꼬리',
+    tail_mouse: '쥐 꼬리',
+    tail_lion: '사자 꼬리',
+    tail_raccoon: '너구리 꼬리',
+    tail_mermaid: '인어 꼬리',
     tail_none: '꼬리 없음',
+
+    // 날개 (3종)
+    wing_none: '날개 없음',
+    wing_angel: '천사 날개',
+    wing_devil: '악마 날개',
 
     // 눈 (9종)
     eye_angry: '화남',
@@ -43,6 +54,12 @@ export const PART_NAMES = {
     eye_closed_down: '감음',
     eye_happy_up: '웃음',
     eye_flat_line: '일자',
+
+    // 안광 (눈 하이라이트)
+    hl_double: '초롱초롱',
+    hl_circle: '기본 점',
+    hl_sparkle: '별빛',
+    hl_heart: '하트',
 
     // 속눈썹
     eyelash_none: '없음',
@@ -58,13 +75,14 @@ export const PART_NAMES = {
     eyebrow_angry: '화남',
     eyebrow_sad: '처짐',
 
-    // 입 (6종)
+    // 입 (7종)
     mouth_line_t: '일자입',
     mouth_cat_w: '고양이입',
     mouth_pout_v: '삐죽입',
     mouth_smile_u: '미소입',
     mouth_nose_only: '코만 표시',
     mouth_open_d: '벌린입',
+    mouth_beak: '새 부리',
 
     // 홍조 이펙트 (스크린샷 3번)
     blush_comic_circle: '원형',
@@ -116,6 +134,12 @@ export const PART_NAMES = {
     acc_bandaid_nose: '코 밴드',
     acc_bandaid_left_cheek: '왼쪽 볼 밴드',
     acc_bandaid_right_cheek: '오른쪽 볼 밴드',
+    acc_dressing_nose: '코 드레싱',
+    acc_dressing_left_cheek: '왼쪽 볼 드레싱',
+    acc_dressing_right_cheek: '오른쪽 볼 드레싱',
+    acc_halo: '헤일로',
+    acc_devil_horns: '악마 뿔',
+    acc_monocle: '모노클',
 
     // 모션 프리셋
     dance_idle: '기본 대기 모션',
@@ -154,14 +178,25 @@ export const PART_NAMES = {
     ear_axolotl: 'Axolotl',
     ear_raccoon: 'Raccoon',
     ear_otter: 'Otter',
+    ear_lion: 'Lion',
     ear_none: 'No Ears',
 
-    // Tails
+    // Tails (10)
     tail_round: 'Round Tail',
     tail_long: 'Long Tail',
     tail_stubby: 'Stubby Tail',
     tail_fluffy: 'Fluffy Tail',
+    tail_hamster: 'Hamster Tail',
+    tail_mouse: 'Mouse Tail',
+    tail_lion: 'Lion Tail',
+    tail_raccoon: 'Raccoon Tail',
+    tail_mermaid: 'Mermaid Tail',
     tail_none: 'No Tail',
+
+    // Wings (3)
+    wing_none: 'No Wings',
+    wing_angel: 'Angel Wings',
+    wing_devil: 'Devil Wings',
 
     // Eyes
     eye_angry: 'Angry',
@@ -173,6 +208,12 @@ export const PART_NAMES = {
     eye_closed_down: 'Closed',
     eye_happy_up: 'Smile',
     eye_flat_line: 'Flat Line',
+
+    // Eye Highlights
+    hl_double: 'Double Glow',
+    hl_circle: 'Single Dot',
+    hl_sparkle: 'Sparkle',
+    hl_heart: 'Heart',
 
     // Eyelashes
     eyelash_none: 'None',
@@ -195,6 +236,7 @@ export const PART_NAMES = {
     mouth_smile_u: 'Smile Mouth',
     mouth_nose_only: 'Nose Only',
     mouth_open_d: 'Open Mouth',
+    mouth_beak: 'Bird Beak',
 
     // Blush
     blush_comic_circle: 'Circle',
@@ -246,6 +288,12 @@ export const PART_NAMES = {
     acc_bandaid_nose: 'Nose Bandage',
     acc_bandaid_left_cheek: 'Left Cheek Bandage',
     acc_bandaid_right_cheek: 'Right Cheek Bandage',
+    acc_dressing_nose: 'Nose Dressing',
+    acc_dressing_left_cheek: 'Left Cheek Dressing',
+    acc_dressing_right_cheek: 'Right Cheek Dressing',
+    acc_halo: 'Halo',
+    acc_devil_horns: 'Devil Horns',
+    acc_monocle: 'Monocle',
 
     // Dance Motions
     dance_idle: 'Idle Stance',
@@ -284,14 +332,25 @@ export const PART_NAMES = {
     ear_axolotl: 'ウーパールーパー',
     ear_raccoon: 'たぬき',
     ear_otter: 'カワウソ',
+    ear_lion: 'ライオン',
     ear_none: '耳なし',
 
-    // しっぽ
+    // しっぽ (10種)
     tail_round: 'まるいしっぽ',
     tail_long: '長いしっぽ',
     tail_stubby: 'ずんぐりしっぽ',
     tail_fluffy: 'もふもふしっぽ',
+    tail_hamster: 'ハムスターのしっぽ',
+    tail_mouse: 'ネズミのしっぽ',
+    tail_lion: 'ライオンのしっぽ',
+    tail_raccoon: 'アライグマのしっぽ',
+    tail_mermaid: '人魚のしっぽ',
     tail_none: 'しっぽなし',
+
+    // 翼 (3種)
+    wing_none: '翼なし',
+    wing_angel: '天使の翼',
+    wing_devil: '悪魔の翼',
 
     // 目
     eye_angry: '怒り',
@@ -303,6 +362,12 @@ export const PART_NAMES = {
     eye_closed_down: '閉じ目',
     eye_happy_up: '笑顔',
     eye_flat_line: '一文字',
+
+    // ハイライト (瞳の光)
+    hl_double: 'きらきら',
+    hl_circle: '丸',
+    hl_sparkle: '星・十字',
+    hl_heart: 'ハート',
 
     // まつげ
     eyelash_none: 'なし',
@@ -325,6 +390,7 @@ export const PART_NAMES = {
     mouth_smile_u: 'にっこり口',
     mouth_nose_only: '鼻のみ',
     mouth_open_d: '開いた口',
+    mouth_beak: '鳥のくちばし',
 
     // チーク
     blush_comic_circle: '円形',
@@ -376,6 +442,12 @@ export const PART_NAMES = {
     acc_bandaid_nose: '鼻の絆創膏',
     acc_bandaid_left_cheek: '左頬の絆創膏',
     acc_bandaid_right_cheek: '右頬の絆創膏',
+    acc_dressing_nose: '鼻ドレッシング',
+    acc_dressing_left_cheek: '左頬ドレッシング',
+    acc_dressing_right_cheek: '右頬ドレッシング',
+    acc_halo: 'ヘイロー',
+    acc_devil_horns: '悪魔の角',
+    acc_monocle: 'モノクル',
 
     // モーション
     dance_idle: '待機モーション',
@@ -414,14 +486,25 @@ export const PART_NAMES = {
     ear_axolotl: '六角恐龙',
     ear_raccoon: '浣熊',
     ear_otter: '水獭',
+    ear_lion: '狮子',
     ear_none: '无耳朵',
 
-    // 尾巴
+    // 尾巴 (10种)
     tail_round: '圆尾巴',
     tail_long: '长尾巴',
     tail_stubby: '粗短尾巴',
     tail_fluffy: '蓬松尾巴',
+    tail_hamster: '仓鼠尾巴',
+    tail_mouse: '老鼠尾巴',
+    tail_lion: '狮子尾巴',
+    tail_raccoon: '浣熊尾巴',
+    tail_mermaid: '人鱼尾巴',
     tail_none: '无尾巴',
+
+    // 翅膀 (3种)
+    wing_none: '无翅膀',
+    wing_angel: '天使之翼',
+    wing_devil: '恶魔之翼',
 
     // 眼睛
     eye_angry: '生气',
@@ -433,6 +516,12 @@ export const PART_NAMES = {
     eye_closed_down: '闭眼',
     eye_happy_up: '微笑',
     eye_flat_line: '一字',
+
+    // 瞳孔高光
+    hl_double: '水汪汪',
+    hl_circle: '单圆点',
+    hl_sparkle: '星光',
+    hl_heart: '爱心',
 
     // 睫毛
     eyelash_none: '无',
@@ -455,6 +544,7 @@ export const PART_NAMES = {
     mouth_smile_u: '微笑嘴',
     mouth_nose_only: '仅鼻子',
     mouth_open_d: '张嘴',
+    mouth_beak: '鸟嘴',
 
     // 腮红
     blush_comic_circle: '圆形',
@@ -506,6 +596,12 @@ export const PART_NAMES = {
     acc_bandaid_nose: '鼻梁创口贴',
     acc_bandaid_left_cheek: '左脸创口贴',
     acc_bandaid_right_cheek: '右脸创口贴',
+    acc_dressing_nose: '鼻梁敷料贴',
+    acc_dressing_left_cheek: '左脸敷料贴',
+    acc_dressing_right_cheek: '右脸敷料贴',
+    acc_halo: '光环',
+    acc_devil_horns: '恶魔角',
+    acc_monocle: '单片眼镜',
 
     // 动作
     dance_idle: '默认待机',
@@ -574,7 +670,7 @@ export const UI_STRINGS = {
     char_name_placeholder: '이름 입력 (예: 복실이 — 저장 파일명 및 스튜디오에 반영)',
 
     // 카테고리 탭 (스크린샷 1번 그대로)
-    tab_ears_tail: '귀 · 꼬리',
+    tab_ears_tail: '귀 · 꼬리 · 날개',
     tab_features: '눈 · 입',
     tab_colors: '색상 · 무늬',
     tab_accessories: '홍조 · 점 · 장식',
@@ -586,12 +682,18 @@ export const UI_STRINGS = {
     sec_ear_shape: '귀 모양',
     sec_ear_shape_desc: '동물별 귀 실루엣 선택',
     sec_tail_shape: '꼬리 모양',
-    sec_tail_shape_desc: '동그란 · 긴 · 뭉툭한 · 복슬복슬 · 없음',
+    sec_tail_shape_desc: '다양한 동물 및 환상종 꼬리 실루엣 선택',
+    sec_wing_shape: '날개 모양',
+    sec_wing_shape_desc: '등 뒤에 달리는 날개 실루엣 선택',
     label_tail_tip_patch: '꼬리 끝 / 줄무늬 포인트 색상 활성화',
+    label_mane_color: '사자 갈기 색상',
 
     // 탭 2
     sec_eye_shape: '눈 모양',
     sec_eye_shape_desc: '기본 타원 · 진지 · 순둥 · 반감은 · 반짝이 등',
+    sec_eye_highlight: '안광',
+    sec_eye_highlight_desc: '초롱초롱한 동공 반사광',
+    label_eye_highlight_size: '안광 크기',
     sec_eyelash: '속눈썹 옵션',
     sec_eyelash_desc: '위 속눈썹 · 아래 속눈썹 조합',
     sec_eyebrow: '눈썹',
@@ -601,6 +703,12 @@ export const UI_STRINGS = {
     label_eyebrow_spacing: '눈썹 간격',
     sec_mouth: '입 모양',
     sec_mouth_desc: '코와 연결된 입 라인 선택',
+    sec_beak_settings: '새 부리 3D 상세 설정',
+    sec_beak_color: '새 부리 색상',
+    label_beak_color: '부리 색상',
+    label_beak_follow_body: '몸 색상과 동일하게',
+    label_beak_size: '부리 크기',
+    label_beak_pos_y: '부리 상하 위치',
 
     // 탭 3
     sec_body_color: '몸 기본 색상',
@@ -646,6 +754,13 @@ export const UI_STRINGS = {
     label_ribbon_scale: '리본 크기',
     sec_extra_acc: '추가 소품',
     sec_extra_acc_desc: '안대 · 밴드 · 안경 · 모자 등을 동시에 착용할 수 있습니다',
+    label_beret_color: '베레모 색상',
+    label_star_pin_color: '별 머리핀 색상',
+    label_glasses_color: '동그란 안경 색상',
+    label_square_glasses_color: '사각 안경 색상',
+    label_crown_color: '미니 왕관 색상',
+    label_devil_horns_color: '악마 뿔 색상',
+    label_monocle_color: '모노클 색상',
 
     // 탭 5
     sec_poly_outline: '폴리곤 셰이딩 & 외곽선',
@@ -770,7 +885,7 @@ export const UI_STRINGS = {
     char_name_placeholder: 'Enter name (e.g. Fluffy — used for filenames and studio)',
 
     // Tabs
-    tab_ears_tail: 'Ears · Tail',
+    tab_ears_tail: 'Ears · Tail · Wings',
     tab_features: 'Eyes · Mouth',
     tab_colors: 'Colors · Patterns',
     tab_accessories: 'Blush · Moles · Deco',
@@ -782,12 +897,18 @@ export const UI_STRINGS = {
     sec_ear_shape: 'Ear Shape',
     sec_ear_shape_desc: 'Select animal ear silhouette',
     sec_tail_shape: 'Tail Shape',
-    sec_tail_shape_desc: 'Round · Long · Stubby · Fluffy · None',
+    sec_tail_shape_desc: 'Select tail silhouette for various animals & creatures',
+    sec_wing_shape: 'Wing Shape',
+    sec_wing_shape_desc: 'Select wing silhouette attached to back',
     label_tail_tip_patch: 'Enable tail tip / stripe accent color',
+    label_mane_color: 'Lion Mane Color',
 
     // Tab 2
     sec_eye_shape: 'Eye Shape',
     sec_eye_shape_desc: 'Default oval · Serious · Gentle · Half-closed · Sparkle etc.',
+    sec_eye_highlight: 'Eye Highlights',
+    sec_eye_highlight_desc: 'Anime catchlights & reflections',
+    label_eye_highlight_size: 'Highlight Size',
     sec_eyelash: 'Eyelashes',
     sec_eyelash_desc: 'Top and bottom eyelash combinations',
     sec_eyebrow: 'Eyebrows',
@@ -797,6 +918,12 @@ export const UI_STRINGS = {
     label_eyebrow_spacing: 'Eyebrow Spacing',
     sec_mouth: 'Mouth Shape',
     sec_mouth_desc: 'Select mouth line connected to nose',
+    sec_beak_settings: 'Bird Beak 3D Settings',
+    sec_beak_color: 'Bird Beak Color',
+    label_beak_color: 'Beak Color',
+    label_beak_follow_body: 'Match Body Color',
+    label_beak_size: 'Beak Size',
+    label_beak_pos_y: 'Beak Vertical Position',
 
     // Tab 3
     sec_body_color: 'Body Base Color',
@@ -842,6 +969,13 @@ export const UI_STRINGS = {
     label_ribbon_scale: 'Ribbon Size',
     sec_extra_acc: 'Extra Accessories',
     sec_extra_acc_desc: 'Wear eyepatches, bandages, glasses, hats etc. simultaneously',
+    label_beret_color: 'Beret Color',
+    label_star_pin_color: 'Star Hairpin Color',
+    label_glasses_color: 'Round Glasses Color',
+    label_square_glasses_color: 'Square Glasses Color',
+    label_crown_color: 'Mini Crown Color',
+    label_devil_horns_color: 'Devil Horns Color',
+    label_monocle_color: 'Monocle Color',
 
     // Tab 5
     sec_poly_outline: 'Polygon Shading & Outline',
@@ -966,7 +1100,7 @@ export const UI_STRINGS = {
     char_name_placeholder: '名前を入力 (例: ポチ — ファイル名やスタジオに反映)',
 
     // タブ
-    tab_ears_tail: '耳・しっぽ',
+    tab_ears_tail: '耳・しっぽ・翼',
     tab_features: '目・口',
     tab_colors: 'カラー・模様',
     tab_accessories: 'チーク・ホクロ・装飾',
@@ -978,12 +1112,18 @@ export const UI_STRINGS = {
     sec_ear_shape: '耳の形',
     sec_ear_shape_desc: '動物ごとの耳のシルエットを選択',
     sec_tail_shape: 'しっぽの形',
-    sec_tail_shape_desc: 'まるい・長い・ずんぐり・もふもふ・なし',
+    sec_tail_shape_desc: '様々な動物や幻獣のしっぽシルエットを選択',
+    sec_wing_shape: '翼の形',
+    sec_wing_shape_desc: '背中に付ける翼のシルエットを選択',
     label_tail_tip_patch: 'しっぽの先端・縞模様ポイントカラーを有効化',
+    label_mane_color: 'ライオンのたてがみの色',
 
     // タブ 2
     sec_eye_shape: '目の形',
     sec_eye_shape_desc: '基本オーバル・真面目・タレ目・ジト目・キラキラ等',
+    sec_eye_highlight: 'ハイライト',
+    sec_eye_highlight_desc: 'キラキラした瞳の光反射',
+    label_eye_highlight_size: 'ハイライトサイズ',
     sec_eyelash: 'まつげオプション',
     sec_eyelash_desc: '上まつげ・下まつげの組み合わせ',
     sec_eyebrow: '眉',
@@ -993,6 +1133,12 @@ export const UI_STRINGS = {
     label_eyebrow_spacing: '眉の間隔',
     sec_mouth: '口の形',
     sec_mouth_desc: '鼻とつながる口のラインを選択',
+    sec_beak_settings: '鳥のくちばし3D詳細設定',
+    sec_beak_color: '鳥のくちばしの色',
+    label_beak_color: 'くちばしの色',
+    label_beak_follow_body: '体色と一致',
+    label_beak_size: 'くちばしのサイズ',
+    label_beak_pos_y: 'くちばしの上下位置',
 
     // タブ 3
     sec_body_color: '体の基本色',
@@ -1038,6 +1184,13 @@ export const UI_STRINGS = {
     label_ribbon_scale: 'リボンサイズ',
     sec_extra_acc: '追加小物',
     sec_extra_acc_desc: '眼帯・絆創膏・メガネ・帽子などを同時に着用できます',
+    label_beret_color: 'ベレー帽の色',
+    label_star_pin_color: '星のヘアピンの色',
+    label_glasses_color: '丸メガネの色',
+    label_square_glasses_color: 'スクエアメガネの色',
+    label_crown_color: 'ミニ王冠の色',
+    label_devil_horns_color: '悪魔の角の色',
+    label_monocle_color: 'モノクルの色',
 
     // タブ 5
     sec_poly_outline: 'ポリゴンシェーディング＆輪郭線',
@@ -1162,7 +1315,7 @@ export const UI_STRINGS = {
     char_name_placeholder: '输入名称 (例如: 毛球 — 用于保存文件名和摄影棚)',
 
     // 标签页
-    tab_ears_tail: '耳朵 · 尾巴',
+    tab_ears_tail: '耳朵 · 尾巴 · 翅膀',
     tab_features: '眼睛 · 嘴巴',
     tab_colors: '颜色 · 花纹',
     tab_accessories: '腮红 · 痣 · 装饰',
@@ -1174,12 +1327,18 @@ export const UI_STRINGS = {
     sec_ear_shape: '耳朵形状',
     sec_ear_shape_desc: '选择不同动物的耳朵轮廓',
     sec_tail_shape: '尾巴形状',
-    sec_tail_shape_desc: '圆尾 · 长尾 · 短粗 · 蓬松 · 无',
+    sec_tail_shape_desc: '选择各种动物与奇幻生物的尾巴造型',
+    sec_wing_shape: '翅膀形状',
+    sec_wing_shape_desc: '选择背部翅膀轮廓',
     label_tail_tip_patch: '启用尾巴末端 / 条纹高亮颜色',
+    label_mane_color: '狮子鬃毛颜色',
 
     // 标签 2
     sec_eye_shape: '眼睛形状',
     sec_eye_shape_desc: '默认椭圆 · 严肃 · 垂眼 · 半睁眼 · 闪亮等',
+    sec_eye_highlight: '眼神光',
+    sec_eye_highlight_desc: '水灵灵的瞳孔反光',
+    label_eye_highlight_size: '高光大小',
     sec_eyelash: '睫毛选项',
     sec_eyelash_desc: '上睫毛与下睫毛组合',
     sec_eyebrow: '眉毛',
@@ -1189,6 +1348,12 @@ export const UI_STRINGS = {
     label_eyebrow_spacing: '眉毛间距',
     sec_mouth: '嘴巴形状',
     sec_mouth_desc: '选择与鼻子相连的嘴巴线条',
+    sec_beak_settings: '鸟嘴3D详细设置',
+    sec_beak_color: '鸟嘴颜色',
+    label_beak_color: '鸟嘴颜色',
+    label_beak_follow_body: '与身体颜色一致',
+    label_beak_size: '鸟嘴大小',
+    label_beak_pos_y: '鸟嘴上下位置',
 
     // 标签 3
     sec_body_color: '身体基础颜色',
@@ -1234,6 +1399,13 @@ export const UI_STRINGS = {
     label_ribbon_scale: '蝴蝶结大小',
     sec_extra_acc: '额外配饰',
     sec_extra_acc_desc: '可同时佩戴眼罩、创口贴、眼镜、帽子等配饰',
+    label_beret_color: '贝雷帽颜色',
+    label_star_pin_color: '星星发夹颜色',
+    label_glasses_color: '圆框眼镜颜色',
+    label_square_glasses_color: '方框眼镜颜色',
+    label_crown_color: '迷你皇冠颜色',
+    label_devil_horns_color: '恶魔角颜色',
+    label_monocle_color: '单片眼镜颜色',
 
     // 标签 5
     sec_poly_outline: '多边形着色与轮廓线',
@@ -1323,10 +1495,10 @@ export function getLanguage() {
 
 export function t(key) {
   const dict = UI_STRINGS[currentLang] || UI_STRINGS.ko;
-  if (dict[key]) return dict[key];
+  if (dict && dict[key]) return dict[key];
   const partDict = PART_NAMES[currentLang] || PART_NAMES.ko;
-  if (partDict[key]) return partDict[key];
-  return UI_STRINGS.ko[key] || PART_NAMES.ko[key] || key;
+  if (partDict && partDict[key]) return partDict[key];
+  return UI_STRINGS.ko?.[key] || PART_NAMES.ko?.[key] || '';
 }
 
 export function getPartName(categoryPrefix, id, fallback) {
@@ -1339,7 +1511,7 @@ export function getPartName(categoryPrefix, id, fallback) {
 }
 
 export function resolvePartName(id, fallback) {
-  const prefixes = ['ear', 'tail', 'eye', 'eyelash', 'eyebrow', 'mouth', 'blush', 'face', 'pattern', 'ribbon', 'acc', 'dance', 'poly', 'scar'];
+  const prefixes = ['ear', 'tail', 'eye', 'hl', 'eyelash', 'eyebrow', 'mouth', 'blush', 'face', 'pattern', 'ribbon', 'acc', 'dance', 'poly', 'scar'];
   const langDict = PART_NAMES[currentLang] || PART_NAMES.ko;
   for (const p of prefixes) {
     const k = `${p}_${id}`;

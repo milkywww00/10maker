@@ -5,28 +5,38 @@ export const FACE_CENTER_X = 512;
 export const FACE_CENTER_Y = 350;
 export const FACE_PROJ_SCALE = 360;
 
-// 하단 좌측: 파츠별 단색 스와치 영역 (x: 0 ~ 420, y: 740 ~ 1024)
+// 하단 좌측: 파츠별 단색 스와치 영역 (x: 0 ~ 460, y: 740 ~ 1024)
 export const SWATCH_MAP = {
-  body:      { index: 0,  x: 0,   y: 740, w: 35, h: 284 },
-  innerEar:  { index: 1,  x: 35,  y: 740, w: 35, h: 284 },
-  tailTip:   { index: 2,  x: 70,  y: 740, w: 35, h: 284 },
-  belly:     { index: 3,  x: 105, y: 740, w: 35, h: 284 },
-  antler:    { index: 4,  x: 140, y: 740, w: 35, h: 284 },
-  accessory: { index: 5,  x: 175, y: 740, w: 35, h: 284 },
-  dark:      { index: 6,  x: 210, y: 740, w: 35, h: 284 },
-  sprout:    { index: 7,  x: 245, y: 740, w: 35, h: 284 },
-  gold:      { index: 8,  x: 280, y: 740, w: 35, h: 284 },
-  earOuter:  { index: 9,  x: 315, y: 740, w: 35, h: 284 },
-  white:     { index: 10, x: 350, y: 740, w: 35, h: 284 },
-  arm:       { index: 11, x: 385, y: 740, w: 35, h: 284 },
-  ahoge:     { index: 12, x: 420, y: 740, w: 25, h: 284 },
+  body:          { index: 0,  x: 0,   y: 740, w: 20, h: 284 },
+  innerEar:      { index: 1,  x: 20,  y: 740, w: 20, h: 284 },
+  tailTip:       { index: 2,  x: 40,  y: 740, w: 20, h: 284 },
+  belly:         { index: 3,  x: 60,  y: 740, w: 20, h: 284 },
+  antler:        { index: 4,  x: 80,  y: 740, w: 20, h: 284 },
+  accessory:     { index: 5,  x: 100, y: 740, w: 20, h: 284 },
+  dark:          { index: 6,  x: 120, y: 740, w: 20, h: 284 },
+  sprout:        { index: 7,  x: 140, y: 740, w: 20, h: 284 },
+  gold:          { index: 8,  x: 160, y: 740, w: 20, h: 284 },
+  earOuter:      { index: 9,  x: 180, y: 740, w: 20, h: 284 },
+  white:         { index: 10, x: 200, y: 740, w: 20, h: 284 },
+  arm:           { index: 11, x: 220, y: 740, w: 20, h: 284 },
+  ahoge:         { index: 12, x: 240, y: 740, w: 20, h: 284 },
+  beak:          { index: 13, x: 260, y: 740, w: 20, h: 284 },
+  mane:          { index: 14, x: 280, y: 740, w: 20, h: 284 },
+  devilRed:      { index: 15, x: 300, y: 740, w: 20, h: 284 },
+  beret:         { index: 16, x: 320, y: 740, w: 20, h: 284 },
+  starPin:       { index: 17, x: 340, y: 740, w: 20, h: 284 },
+  glasses:       { index: 18, x: 360, y: 740, w: 20, h: 284 },
+  squareGlasses: { index: 19, x: 380, y: 740, w: 20, h: 284 },
+  crown:         { index: 20, x: 400, y: 740, w: 20, h: 284 },
+  devilHorns:    { index: 21, x: 420, y: 740, w: 20, h: 284 },
+  monocle:       { index: 22, x: 440, y: 740, w: 20, h: 284 },
 };
 
 // 하단 중앙: 몸통 배 무늬(Belly Patch) 전용 정면 직교 투영 패치 영역
 export const TORSO_PATCH_RECT = {
-  x: 450,
+  x: 470,
   y: 700,
-  w: 200,
+  w: 180,
   h: 300,
 };
 
@@ -627,6 +637,45 @@ export class TextureGenerator {
       drawBandaid(cx + eyeSpacing + 78, eyeY + 52, 54, 34, 0.14);
     }
 
+    // 하얀 드레싱 밴드 그리기 (외곽선이 있는 깔끔한 흰색 사각형 + 내부 거즈 패드)
+    const drawDressingBand = (bx, by, w, h, angleRad) => {
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.rotate(angleRad);
+
+      const radius = 6;
+      // 1) 바깥 하얀색 밴드 몸체
+      drawRoundRectPath(-w * 0.5, -h * 0.5, w, h, radius);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.lineWidth = olW;
+      ctx.strokeStyle = state.outlineColor || '#18181b';
+      ctx.stroke();
+
+      // 2) 내부 사각 거즈 패드
+      const pw = w * 0.62;
+      const ph = h * 0.64;
+      drawRoundRectPath(-pw * 0.5, -ph * 0.5, pw, ph, 4);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fill();
+      ctx.lineWidth = Math.max(1.8, olWThin * 1.1);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.stroke();
+
+      ctx.restore();
+    };
+
+    // 하얀 드레싱 밴드 3종 배치
+    if (extras.includes('dressing_nose')) {
+      drawDressingBand(cx, eyeY - 6, 64, 46, 0);
+    }
+    if (extras.includes('dressing_left_cheek')) {
+      drawDressingBand(cx - eyeSpacing - 82, eyeY + 54, 68, 56, -0.12);
+    }
+    if (extras.includes('dressing_right_cheek')) {
+      drawDressingBand(cx + eyeSpacing + 82, eyeY + 54, 68, 56, 0.12);
+    }
+
     const outlineColor = state.outlineColor || '#18181b';
 
     // 2. 의료용 하얀 안대 — 사각형(라운드 사각) 부드러운 거즈 패드 + 귀걸이형 깔끔한 탄성 끈
@@ -840,11 +889,11 @@ export class TextureGenerator {
       const ex = cx + dir * eyeSpacing;
       // dir === -1: 왼쪽 눈(보는 사람 기준 왼쪽), dir === 1: 오른쪽 눈(보는 사람 기준 오른쪽)
       const color = dir === -1 ? leftColor : rightColor;
-      this.drawSingleEye(ctx, ex, eyeY, dir, eyeType, lashType, color, 1.0, isShock, shockSettings);
+      this.drawSingleEye(ctx, ex, eyeY, dir, eyeType, lashType, color, 1.0, isShock, shockSettings, state);
     });
   }
 
-  drawSingleEye(ctx, ex, ey, dir, eyeType, lashType, color, scale = 1.0, isShock = false, shockSettings = null) {
+  drawSingleEye(ctx, ex, ey, dir, eyeType, lashType, color, scale = 1.0, isShock = false, shockSettings = null, state = null) {
     ctx.save();
     ctx.translate(ex, ey);
     ctx.scale(scale, scale);
@@ -897,6 +946,7 @@ export class TextureGenerator {
         ctx.beginPath();
         ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
         ctx.fill();
+        this.drawEyeHighlight(ctx, eyeType, dir, rx, ry, state);
       }
     } else if (eyeType === 'angry') {
       ctx.save();
@@ -920,6 +970,7 @@ export class TextureGenerator {
         ctx.beginPath();
         ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
         ctx.fill();
+        this.drawEyeHighlight(ctx, eyeType, dir, rx, ry, state);
       }
       ctx.restore();
     } else if (eyeType === 'sad') {
@@ -944,6 +995,7 @@ export class TextureGenerator {
         ctx.beginPath();
         ctx.ellipse(0, 2, rx, ry, 0, 0, Math.PI * 2);
         ctx.fill();
+        this.drawEyeHighlight(ctx, eyeType, dir, rx, ry, state);
       }
       ctx.restore();
     } else if (eyeType === 'half') {
@@ -964,6 +1016,7 @@ export class TextureGenerator {
         ctx.beginPath();
         ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
         ctx.fill();
+        this.drawEyeHighlight(ctx, eyeType, dir, rx, ry, state);
       }
       ctx.restore();
     } else if (eyeType === 'sparkle') {
@@ -1054,6 +1107,80 @@ export class TextureGenerator {
       ctx.moveTo(-32, 3);
       ctx.lineTo(32, 3);
       ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  drawEyeHighlight(ctx, eyeType, dir, rx, ry, state) {
+    if (!state || state.eyeHighlight === false) return;
+
+    const hlType = state.eyeHighlightType || 'double';
+    const hlSize = Math.max(0.4, Math.min(2.0, state.eyeHighlightSize ?? 1.0));
+
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+
+    // 빛의 방향: 아니메/만화 표준 규칙에 따라 상단(약간 왼쪽)에서 비치는 자연스러운 안광
+    const hx = eyeType === 'half' ? -8 : -10;
+    const hy = eyeType === 'half' ? 9 : -13;
+
+    if (hlType === 'double') {
+      // 1. 초롱초롱 (메인 큰 하이라이트 + 보조 작은 하이라이트)
+      ctx.beginPath();
+      ctx.arc(hx, hy, 8.5 * hlSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      const hx2 = eyeType === 'half' ? 12 : 11;
+      const hy2 = eyeType === 'half' ? 22 : 14;
+      ctx.beginPath();
+      ctx.arc(hx2, hy2, 4.6 * hlSize, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (hlType === 'circle') {
+      // 2. 기본 점 (심플하고 또렷한 단일 원형 하이라이트)
+      ctx.beginPath();
+      ctx.arc(hx, hy, 9.2 * hlSize, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (hlType === 'sparkle') {
+      // 3. 별빛 (동화풍 십자 반짝이 + 보조 점)
+      ctx.save();
+      ctx.translate(hx + 1, hy);
+      const sw = 10.5 * hlSize;
+      const sh = 12.0 * hlSize;
+      ctx.beginPath();
+      ctx.moveTo(0, -sh);
+      ctx.quadraticCurveTo(1.5, -1.5, sw, 0);
+      ctx.quadraticCurveTo(1.5, 1.5, 0, sh);
+      ctx.quadraticCurveTo(-1.5, 1.5, -sw, 0);
+      ctx.quadraticCurveTo(-1.5, -1.5, 0, -sh);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      const hx2 = eyeType === 'half' ? 12 : 11;
+      const hy2 = eyeType === 'half' ? 22 : 14;
+      ctx.beginPath();
+      ctx.arc(hx2, hy2, 4.0 * hlSize, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (hlType === 'heart') {
+      // 4. 하트 (사랑스러운 미니 하트 반사광 + 보조 점)
+      ctx.save();
+      ctx.translate(hx + 1, hy);
+      const hs = 0.82 * hlSize;
+      ctx.scale(hs, hs);
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.bezierCurveTo(-8, -8, -13, 2, 0, 14);
+      ctx.bezierCurveTo(13, 2, 8, -8, 0, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      const hx2 = eyeType === 'half' ? 12 : 11;
+      const hy2 = eyeType === 'half' ? 22 : 14;
+      ctx.beginPath();
+      ctx.arc(hx2, hy2, 3.8 * hlSize, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     ctx.restore();
@@ -1282,8 +1409,12 @@ export class TextureGenerator {
   }
 
   drawNoseAndMouth(ctx, state) {
-    const { cx, noseY } = this.getFaceCoords();
     const mouthType = state.mouthType || 'cat_w';
+    // 3D 돌출형 부리가 생성되므로 2D 텍스처 상에는 중복하여 그리지 않음
+    if (mouthType === 'beak') {
+      return;
+    }
+    const { cx, noseY } = this.getFaceCoords();
     const color = state.noseMouthColor || '#18181b';
 
     this.drawNoseMouthShape(ctx, cx, noseY, mouthType, color, 1.0);
@@ -1298,9 +1429,12 @@ export class TextureGenerator {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 14, 9.5, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // 새 부리는 별도의 포유류 코 점(타원)을 그리지 않음 (부리 자체가 코/입을 대체)
+    if (mouthType !== 'beak') {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 14, 9.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.lineWidth = 10.5;
 
@@ -1343,6 +1477,52 @@ export class TextureGenerator {
       ctx.fillStyle = '#ffffff';
       ctx.fill();
       ctx.stroke();
+    } else if (mouthType === 'beak') {
+      // 귀엽고 도톰한 새 부리 (상단 부리 + 하단 부리 + 맞물림선 + 볼륨 반사광)
+      ctx.save();
+      const beakOutlineColor = color;
+      const beakFillTop = '#fbbf24';    // 화사하고 따뜻한 옐로우 골드
+      const beakFillBot = '#f59e0b';    // 따뜻한 앰버 오렌지 (입체 그림자 톤)
+
+      // 1) 하단 부리 (아래로 둥글게 볼록한 턱)
+      ctx.beginPath();
+      ctx.moveTo(-16, 14);
+      ctx.quadraticCurveTo(0, 16, 16, 14);
+      ctx.quadraticCurveTo(0, 33, -16, 14);
+      ctx.closePath();
+      ctx.fillStyle = beakFillBot;
+      ctx.fill();
+      ctx.lineWidth = 6.8;
+      ctx.strokeStyle = beakOutlineColor;
+      ctx.stroke();
+
+      // 2) 상단 부리 (위로 부드럽게 솟은 통통한 돔)
+      ctx.beginPath();
+      ctx.moveTo(-22, 14);
+      ctx.quadraticCurveTo(0, -7, 22, 14);
+      ctx.quadraticCurveTo(0, 18, -22, 14);
+      ctx.closePath();
+      ctx.fillStyle = beakFillTop;
+      ctx.fill();
+      ctx.lineWidth = 6.8;
+      ctx.strokeStyle = beakOutlineColor;
+      ctx.stroke();
+
+      // 3) 부리 중앙 가로선 (입술 맞물림 라인)
+      ctx.beginPath();
+      ctx.moveTo(-20, 14);
+      ctx.quadraticCurveTo(0, 17, 20, 14);
+      ctx.lineWidth = 6.0;
+      ctx.strokeStyle = beakOutlineColor;
+      ctx.stroke();
+
+      // 4) 상단 부리 앙증맞은 만화풍 볼륨 하이라이트
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.48)';
+      ctx.beginPath();
+      ctx.ellipse(0, 2.5, 8.5, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
     }
 
     ctx.restore();
@@ -1372,6 +1552,18 @@ export class TextureGenerator {
       ahoge: state.ahogeFollowBody !== false
         ? (state.bodyColor || '#ffffff')
         : (state.ahogeColor || state.bodyColor || '#ffffff'),
+      beak: state.beakFollowBody
+        ? (state.bodyColor || '#ffffff')
+        : (state.beakColor || '#fbbf24'),
+      mane: state.maneColor || '#f97316',
+      devilRed: '#c51b29',
+      beret: state.beretColor || '#ef476f',
+      starPin: state.starPinColor || '#ffd166',
+      glasses: state.glassesColor || '#18181b',
+      squareGlasses: state.squareGlassesColor || '#18181b',
+      crown: state.crownColor || '#ffd166',
+      devilHorns: state.devilHornsColor || '#18181b',
+      monocle: state.monocleColor || '#ffd166',
     };
 
     Object.entries(SWATCH_MAP).forEach(([key, rect]) => {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
@@ -124,7 +124,7 @@
             </svg>
             <span data-i18n="vp_front">정면</span>
           </button>
-          <button type="button" id="btnQuickDance" class="vp-btn" title="모션 전환">
+          <button type="button" id="btnQuickDance" class="vp-btn" data-i18n-title="vp_motion_toggle" title="모션 전환">
             <span data-i18n="vp_motion_toggle">모션 전환</span>
           </button>
           <button type="button" id="btnSnapPng" class="vp-btn" title="PNG 이미지 저장">
@@ -211,7 +211,7 @@
       </div>
 
       <nav class="editor-nav" id="categoryTabs" aria-label="편집 카테고리">
-        <button type="button" class="nav-tab active" data-tab="tab-ears-tail" data-i18n="tab_ears_tail">귀 · 꼬리</button>
+        <button type="button" class="nav-tab active" data-tab="tab-ears-tail" data-i18n="tab_ears_tail">귀 · 꼬리 · 날개</button>
         <button type="button" class="nav-tab" data-tab="tab-face" data-i18n="tab_features">눈 · 입</button>
         <button type="button" class="nav-tab" data-tab="tab-colors" data-i18n="tab_colors">색상 · 무늬</button>
         <button type="button" class="nav-tab" data-tab="tab-deco" data-i18n="tab_accessories">홍조 · 점 · 장식</button>
@@ -225,16 +225,30 @@
         <section class="tab-pane active" id="tab-ears-tail">
           <div class="section-block">
             <div class="section-head">
-              <h2><span data-i18n="sec_ear_shape">귀 모양</span> <span class="count-tag">15</span></h2>
+              <h2><span data-i18n="sec_ear_shape">귀 모양</span> <span class="count-tag">16</span></h2>
               <span class="section-desc" data-i18n="sec_ear_shape_desc">동물별 귀 실루엣 선택</span>
             </div>
             <div class="thumb-grid" id="earGrid"></div>
+
+            <div class="option-bar" id="rowLionManeColor" style="display: none; margin-top: 14px;">
+              <label class="check-label">
+                <span data-i18n="label_mane_color">사자 갈기 색상</span>
+              </label>
+              <input type="color" id="pickerManeColor" class="color-box" value="#f97316" title="사자 갈기 색상" />
+            </div>
+
+            <div class="option-bar" id="rowAntlerColor" style="display: none; margin-top: 10px;">
+              <label class="check-label">
+                <span data-i18n="label_antler_color">사슴 뿔 색상</span>
+              </label>
+              <input type="color" id="pickerAntlerColor" class="color-box" value="#c69c6d" title="사슴 뿔 색상" />
+            </div>
           </div>
 
           <div class="section-block">
             <div class="section-head">
-              <h2><span data-i18n="sec_tail_shape">꼬리 모양</span> <span class="count-tag">5</span></h2>
-              <span class="section-desc" data-i18n="sec_tail_shape_desc">동그란 · 긴 · 뭉툭한 · 복슬복슬 · 없음</span>
+              <h2><span data-i18n="sec_tail_shape">꼬리 모양</span> <span class="count-tag">10</span></h2>
+              <span class="section-desc" data-i18n="sec_tail_shape_desc">다양한 동물 및 환상종 꼬리 실루엣 선택</span>
             </div>
             <div class="thumb-grid" id="tailGrid"></div>
 
@@ -246,6 +260,14 @@
               <input type="color" id="colorTailTip" class="color-box" value="#27272a" title="꼬리 포인트 색상" />
             </div>
           </div>
+
+          <div class="section-block">
+            <div class="section-head">
+              <h2><span data-i18n="sec_wing_shape">날개 모양</span> <span class="count-tag">3</span></h2>
+              <span class="section-desc" data-i18n="sec_wing_shape_desc">등 뒤에 달리는 날개 실루엣 선택</span>
+            </div>
+            <div class="thumb-grid" id="wingGrid"></div>
+          </div>
         </section>
 
         <!-- 탭 2: 눈 (9종) + 속눈썹 + 입 (6종) -->
@@ -256,6 +278,25 @@
               <span class="section-desc" data-i18n="sec_eye_shape_desc">기본 타원 · 진지 · 순둥 · 반감은 · 반짝이 등</span>
             </div>
             <div class="thumb-grid" id="eyeGrid"></div>
+
+            <!-- 안광 옵션 카드 -->
+            <div class="mole-item-card" id="eyeHighlightCard" style="margin-top: 10px;">
+              <div class="mole-item-head">
+                <label class="check-label" style="font-weight: 700; font-size: 0.84rem;">
+                  <input type="checkbox" id="chkEyeHighlight" />
+                  <span data-i18n="sec_eye_highlight">안광</span>
+                </label>
+                <span class="section-desc" style="margin: 0; font-size: 0.75rem;" data-i18n="sec_eye_highlight_desc">초롱초롱한 동공 반사광</span>
+              </div>
+              <div id="eyeHighlightOptions" style="display: none;">
+                <div class="chip-list" id="eyeHighlightGrid" style="margin-bottom: 8px;"></div>
+                <div class="slider-item">
+                  <label for="sliderEyeHighlightSize" data-i18n="label_eye_highlight_size">안광 크기</label>
+                  <input type="range" id="sliderEyeHighlightSize" min="0.5" max="1.8" step="0.05" value="1.0" />
+                  <span id="valEyeHighlightSize">1.00</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="section-block">
@@ -296,10 +337,37 @@
 
           <div class="section-block">
             <div class="section-head">
-              <h2><span data-i18n="sec_mouth">입 모양</span> <span class="count-tag">6</span></h2>
+              <h2><span data-i18n="sec_mouth">입 모양</span> <span class="count-tag">7</span></h2>
               <span class="section-desc" data-i18n="sec_mouth_desc">코와 연결된 입 라인 선택</span>
             </div>
             <div class="thumb-grid" id="mouthGrid"></div>
+
+            <!-- 새 부리 전용 상세 설정 카드 (입 모양이 '새 부리'일 때만 표시) -->
+            <div class="mole-item-card" id="beakOptionsCard" style="display: none; margin-top: 14px;">
+              <div class="mole-item-head">
+                <span style="font-weight: 700; color: #18181b;" data-i18n="sec_beak_settings">새 부리 3D 상세 설정</span>
+              </div>
+              <div class="slider-item" style="margin-bottom: 8px;">
+                <label data-i18n="sec_beak_color">새 부리 색상</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input type="color" id="pickerBeakColor" class="color-box" value="#fbbf24" />
+                  <label class="check-label" style="font-size: 0.78rem;">
+                    <input type="checkbox" id="chkBeakFollowBody" />
+                    <span data-i18n="label_beak_follow_body">몸 색상과 동일하게</span>
+                  </label>
+                </div>
+              </div>
+              <div class="slider-item">
+                <label for="sliderBeakSize" data-i18n="label_beak_size">부리 크기</label>
+                <input type="range" id="sliderBeakSize" min="0.6" max="2.0" step="0.05" value="1.0" />
+                <span id="valBeakSize">1.00</span>
+              </div>
+              <div class="slider-item">
+                <label for="sliderBeakY" data-i18n="label_beak_pos_y">부리 상하 위치</label>
+                <input type="range" id="sliderBeakY" min="-1.0" max="1.0" step="0.05" value="0.0" />
+                <span id="valBeakY">0.00</span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -389,11 +457,6 @@
                 <span data-i18n="label_belly_patch">몸통 배 부분 색상 구분</span>
               </label>
               <input type="color" id="pickerBellyColor" class="color-box" value="#fff5eb" />
-            </div>
-
-            <div class="option-bar" style="margin-top: 8px;">
-              <span data-i18n="label_antler_color">사슴 뿔 색상</span>
-              <input type="color" id="pickerAntlerColor" class="color-box" value="#c69c6d" />
             </div>
           </div>
         </section>
@@ -505,6 +568,37 @@
               <span class="section-desc" data-i18n="sec_extra_acc_desc">안대 · 밴드 · 안경 · 모자 등을 동시에 착용할 수 있습니다</span>
             </div>
             <div class="chip-list" id="extraAccGrid"></div>
+
+            <div id="extraAccColorSettings" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div class="option-bar acc-color-row" id="rowBeretColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_beret_color">베레모 색상</span></label>
+                <input type="color" id="pickerBeretColor" class="color-box" value="#ef476f" title="베레모 색상" />
+              </div>
+              <div class="option-bar acc-color-row" id="rowStarPinColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_star_pin_color">별 머리핀 색상</span></label>
+                <input type="color" id="pickerStarPinColor" class="color-box" value="#ffd166" title="별 머리핀 색상" />
+              </div>
+              <div class="option-bar acc-color-row" id="rowGlassesColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_glasses_color">동그란 안경 색상</span></label>
+                <input type="color" id="pickerGlassesColor" class="color-box" value="#18181b" title="동그란 안경 색상" />
+              </div>
+              <div class="option-bar acc-color-row" id="rowSquareGlassesColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_square_glasses_color">사각 안경 색상</span></label>
+                <input type="color" id="pickerSquareGlassesColor" class="color-box" value="#18181b" title="사각 안경 색상" />
+              </div>
+              <div class="option-bar acc-color-row" id="rowCrownColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_crown_color">미니 왕관 색상</span></label>
+                <input type="color" id="pickerCrownColor" class="color-box" value="#ffd166" title="미니 왕관 색상" />
+              </div>
+              <div class="option-bar acc-color-row" id="rowDevilHornsColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_devil_horns_color">악마 뿔 색상</span></label>
+                <input type="color" id="pickerDevilHornsColor" class="color-box" value="#18181b" title="악마 뿔 색상" />
+              </div>
+              <div class="option-bar acc-color-row" id="rowMonocleColor" style="display: none;">
+                <label class="check-label"><span data-i18n="label_monocle_color">모노클 색상</span></label>
+                <input type="color" id="pickerMonocleColor" class="color-box" value="#ffd166" title="모노클 색상" />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -732,6 +826,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=42"></script>
+  <script type="module" src="js/app.js?v=74"></script>
 </body>
 </html>

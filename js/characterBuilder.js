@@ -1,6 +1,6 @@
 // 10공방 — 3D 캐릭터 빌더 (롭이어·강아지·햄스터·쥐 귀 정밀 복원, 무늬 끊김 0%, 꼬리 끝 잉크라인 보강, 소품·리본 매끈한 조형)
 import * as THREE from 'three';
-import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=39';
+import { getSwatchUV, getHeadOrthographicUV, getEarVertexUV, getTorsoFrontUV } from './textureGenerator.js?v=67';
 
 export const BONE_DEFS = [
   { name: '全ての親', nameEn: 'Root', parent: -1 },          // 0
@@ -89,6 +89,37 @@ function toSmoothNonIndexed(geo) {
   const out = geo.index ? geo.toNonIndexed() : geo;
   out.userData = { ...geo.userData };
   return out;
+}
+
+function reverseGeometryWinding(geo) {
+  if (geo.index) {
+    const idx = geo.index.array;
+    for (let i = 0; i < idx.length; i += 3) {
+      const tmp = idx[i];
+      idx[i] = idx[i + 2];
+      idx[i + 2] = tmp;
+    }
+    geo.index.needsUpdate = true;
+  } else {
+    for (const name of ['position', 'normal', 'uv']) {
+      const attr = geo.attributes[name];
+      if (!attr) continue;
+      const arr = attr.array;
+      const itemSize = attr.itemSize;
+      const count = attr.count;
+      for (let i = 0; i < count; i += 3) {
+        const o0 = i * itemSize;
+        const o2 = (i + 2) * itemSize;
+        for (let k = 0; k < itemSize; k++) {
+          const tmp = arr[o0 + k];
+          arr[o0 + k] = arr[o2 + k];
+          arr[o2 + k] = tmp;
+        }
+      }
+      attr.needsUpdate = true;
+    }
+  }
+  geo.computeVertexNormals();
 }
 
 export class CharacterBuilder {
@@ -207,9 +238,15 @@ export class CharacterBuilder {
     const earGeoms = this.createEarsGeometry(state, headCenterY, headScale, poly);
     geometries.push(...earGeoms);
 
-    // 6. 5종 꼬리 (뿌리를 몸통 안쪽 깊이 심어 외곽선 두께를 줄여도 떨어져 보이지 않음)
+    // 6. 10종 꼬리 (뿌리를 몸통 안쪽 깊이 심어 외곽선 두께를 줄여도 떨어져 보이지 않음)
     const tailGeoms = this.createTailGeometry(state, torsoBotY, chubby, poly);
     geometries.push(...tailGeoms);
+
+    // 6-1. 날개 (천사 날개, 악마 날개)
+    if (state.wingType && state.wingType !== 'none') {
+      const wingGeoms = this.createWingsGeometry(state, torsoTopY, chubby, headScale, poly);
+      geometries.push(...wingGeoms);
+    }
 
     // 7. 리본 & 추가 소품
     const accGeoms = this.createAccessoriesGeometry(state, headCenterY, torsoTopY, headScale, chubby, poly);
@@ -218,6 +255,12 @@ export class CharacterBuilder {
     // 8. 머리카락 더듬이 (바보털)
     const ahogeGeoms = this.createAhogesGeometry(state, headCenterY, headScale, poly);
     geometries.push(...ahogeGeoms);
+
+    // 9. 돌출형 3D 새 부리 (입 모양 '새 부리' 선택 시)
+    if (state.mouthType === 'beak') {
+      const beakGeoms = this.createBeakGeometry(state, headCenterY, headScale, poly);
+      geometries.push(...beakGeoms);
+    }
 
     const mergedGeometry = this.mergeGeometries(geometries, poly.facetBlend);
     const outlineTargetGeometries = geometries.filter((g) => !g.userData.noOutline);
@@ -745,10 +788,75 @@ export class CharacterBuilder {
           rotZ: -dir * 0.78,
           hasInner: true,
         }));
+      } else if (type === 'lion') {
+        list.push(this.createRoundDiskEar({
+          dir, earBone, headCenterY, headScale, poly,
+          center: [dir * 0.59, 0.43, 0.09],
+          rx: 0.20, ry: 0.21, rz: 0.07,
+          rotZ: -dir * 0.45,
+          hasInner: true,
+        }));
       }
     });
 
+    if (type === 'lion') {
+      list.push(...this.createLionManeGeometry(state, headCenterY, headScale, poly));
+    }
+
     return list;
+  }
+
+  createLionManeGeometry(state, headCenterY, headScale, poly) {
+    const maneUV = getSwatchUV('mane');
+    const parts = [];
+    const count = 16;
+    const segW = poly ? (poly.isVeryLow ? 8 : 12) : 12;
+    const segH = poly ? (poly.isVeryLow ? 6 : 8) : 8;
+
+    const rxHead = 0.88 * headScale;
+    const ryTop = 0.64 * headScale;
+    const ryBot = 0.46 * headScale;
+    const lobeR = 0.17 * headScale;
+
+    // 16개의 갈기 꽃잎이 머리 둘레를 360도 완벽하게 하나의 통일된 원형/타원형으로 감싸도록 단일 연속 수식 적용
+    // 상단(z = +0.025)에서 하단(z = +0.175)까지 자연스럽게 앞으로 전진하여 얼굴과 어우러지게 배치
+    for (let i = 0; i < count; i++) {
+      const angle = -Math.PI * 0.5 + (i / count) * Math.PI * 2;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+
+      const cx = cosA * (rxHead + lobeR * 0.06);
+      const ryEff = sinA >= 0 ? ryTop : ryBot;
+      const cy = headCenterY + sinA * (ryEff + lobeR * 0.12);
+      const cz = (0.10 - sinA * 0.075) * headScale;
+
+      const lobeGeo = new THREE.SphereGeometry(1.0, segW, segH);
+      lobeGeo.scale(lobeR, lobeR, lobeR * 0.48);
+      lobeGeo.translate(cx, cy, cz);
+      lobeGeo.computeVertexNormals();
+
+      const pos = lobeGeo.attributes.position;
+      const uvs = [];
+      const sIdx = [];
+      const sW = [];
+      const outScale = [];
+
+      for (let k = 0; k < pos.count; k++) {
+        uvs.push(maneUV.u, maneUV.v);
+        sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
+        sW.push(1.0, 0, 0, 0);
+        outScale.push(0.90);
+      }
+
+      lobeGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      lobeGeo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sIdx, 4));
+      lobeGeo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sW, 4));
+      lobeGeo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(outScale, 1));
+
+      parts.push(toSmoothNonIndexed(lobeGeo));
+    }
+
+    return parts;
   }
 
   createNaturalLobeEar(opts) {
@@ -1075,7 +1183,7 @@ export class CharacterBuilder {
   }
 
   // ==========================================================================
-  // 6. 꼬리 5종 (동그란 꼬리가 몸통 밖으로 귀엽고 도톰하게 솟아나오도록 위치 최적화!)
+  // 6. 꼬리 10종 (동그란·긴·뭉툭한·복슬·햄스터·쥐·사자·너구리·인어·없음)
   // ==========================================================================
   createTailGeometry(state, torsoBotY, chubby, poly) {
     const type = state.tailType || 'long';
@@ -1083,6 +1191,8 @@ export class CharacterBuilder {
 
     const bodyUV = getSwatchUV('body');
     const tipUV = getSwatchUV('tailTip');
+    const maneUV = getSwatchUV('mane');
+    const darkUV = getSwatchUV('dark');
 
     const baseY = torsoBotY + 0.14;
     const baseZ = -0.07 * chubby;
@@ -1096,12 +1206,14 @@ export class CharacterBuilder {
     const skinWeights = [];
     const outlineScales = [];
     const vertT = [];
+    const rawNy = [];
 
     for (let i = 0; i < pos.count; i++) {
       const nx = pos.getX(i);
       const ny = pos.getY(i);
       const nz = pos.getZ(i);
 
+      rawNy.push(ny);
       const t = (ny + 1.0) * 0.5;
       vertT.push(t);
 
@@ -1141,13 +1253,92 @@ export class CharacterBuilder {
         vy = baseY + spineY + nz * r * rootPlug + (ny > 0 ? ny * r * 0.45 : 0);
         vz = baseZ + spineZ - (ny > 0 ? ny * r * 0.65 : 0);
         outlineScales.push(t < 0.12 ? 0.0 : 1.0);
+      } else if (type === 'hamster') {
+        // 햄스터 꼬리: 뭉툭한 꼬리를 아주 짧고 작게 변형한 귀여운 꼬투리
+        const r = 0.092 * (0.85 + 0.22 * Math.sin(t * Math.PI));
+        const spineY = -t * 0.015 + Math.sin(t * Math.PI) * 0.02;
+        const spineZ = -t * 0.17;
+        vx = nx * r * rootPlug;
+        vy = baseY + spineY + nz * r * rootPlug;
+        vz = baseZ - 0.11 * chubby + spineZ - (ny > 0 ? ny * r * 0.4 : 0);
+        outlineScales.push(t < 0.15 ? 0.0 : 1.0);
+      } else if (type === 'mouse') {
+        // 쥐 꼬리: 긴 꼬리를 가늘고 길게 변형한 와이어형 꼬리
+        const r = 0.042 * (1.0 - t * 0.52);
+        const spineY = -t * 0.05 + Math.sin(t * Math.PI * 1.8) * 0.07 + Math.pow(t, 2.2) * 0.26;
+        const spineZ = -t * 0.82;
+        const spineX = Math.sin(t * Math.PI) * 0.04;
+        vx = spineX + nx * r * rootPlug;
+        vy = baseY + spineY + nz * r * rootPlug;
+        vz = baseZ + spineZ - (ny > 0 ? ny * r * 0.35 : 0);
+        outlineScales.push(t < 0.10 ? 0.0 : 1.0);
+      } else if (type === 'lion') {
+        // 사자 꼬리: 가늘게 뻗어 나가다 끝에 탐스러운 털술(갈기색)이 맺히는 실루엣
+        let r = 0.046 * (1.0 - t * 0.15);
+        let tuftY = 0;
+        if (t >= 0.76) {
+          const tuftT = (t - 0.76) / 0.24;
+          const tuftR = 0.04 + Math.sin(tuftT * Math.PI) * 0.128;
+          r = tuftR;
+          if (tuftT > 0.82) {
+            tuftY = (tuftT - 0.82) * 0.06;
+          }
+        }
+        const spineY = Math.pow(t, 1.35) * 0.42 + Math.sin(t * Math.PI * 1.4) * 0.06 + tuftY;
+        const spineZ = -t * 0.68;
+        const spineX = Math.sin(t * Math.PI * 1.1) * 0.06;
+        vx = spineX + nx * r * rootPlug;
+        vy = baseY + spineY + nz * r * rootPlug;
+        vz = baseZ + spineZ;
+        outlineScales.push(t < 0.12 ? 0.0 : 1.0);
+      } else if (type === 'raccoon') {
+        // 너구리 꼬리: 등 뒤로 자연스럽게 뻗으며, 몸통 쪽은 좁고 뒤로 갈수록 도톰하게 팽창(r=0.20)하며 끝은 완벽한 둥근 돔!
+        let r = 0;
+        if (t < 0.65) {
+          const u = t / 0.65;
+          r = 0.07 + Math.sin(u * Math.PI * 0.5) * 0.13;
+        } else {
+          r = 0.20;
+        }
+        const spineY = -t * 0.14;
+        const spineZ = -t * 0.52;
+        vx = nx * r * rootPlug;
+        vy = baseY + spineY + nz * r * rootPlug;
+        vz = baseZ + spineZ - (ny > 0 ? ny * r * 0.60 : 0);
+        outlineScales.push(t < 0.12 ? 0.0 : 1.0);
+      } else if (type === 'mermaid') {
+        // 인어 꼬리: 엉덩이 하단에서 바닥 쪽으로 자연스럽게 흐르는 원통형 몸통(t<0.65) + 끝에서 매끄럽게 일체화되어 펼쳐지는 플루크 지느러미(t>=0.65)
+        if (t < 0.65) {
+          const u = t / 0.65;
+          const spineY = -u * 0.35;
+          const spineZ = -u * 0.45;
+          const r = 0.17 * (1.0 - u * 0.30);
+          vx = nx * r * rootPlug;
+          vy = baseY + spineY + nz * r * rootPlug;
+          vz = baseZ + spineZ - (ny > 0 ? ny * r * 0.60 : 0);
+        } else {
+          const u = (t - 0.65) / 0.35;
+          const spineY = -0.35 - u * 0.12;
+          const spineZ = -0.45 - u * 0.25;
+          const finSpan = 0.12 + Math.sin(u * Math.PI * 0.5) * 0.36;
+          const thick = 0.045 * (1.0 - u * 0.65);
+          const notch = (1.0 - Math.min(1.0, Math.abs(nx) * 2.2)) * 0.08 * u;
+          const sweep = u * 0.12 + Math.abs(nx) * 0.07 * u;
+          vx = nx * finSpan;
+          vy = baseY + spineY + nz * thick;
+          vz = baseZ + spineZ - sweep + notch + nz * thick;
+        }
+        outlineScales.push(t < 0.10 ? 0.0 : 1.0);
       }
 
       pos.setXYZ(i, vx, vy, vz);
 
-      const tipWeight = type === 'round' ? 0.25 : Math.max(0, (t - 0.25) / 0.75);
+      // 본 스키닝 웨이트: 회전 중심(Base)에서 꼬리 끝(Tip)으로 갈수록 단절 없이 매끄럽게 보간
+      const tipWeight = (type === 'round' || type === 'hamster')
+        ? 0.10
+        : Math.pow(Math.max(0, t), 1.35);
       skinIndices.push(BONE_INDEX.TAIL_BASE, BONE_INDEX.TAIL_TIP, BONE_INDEX.LOWER_BODY, 0);
-      skinWeights.push((1.0 - tipWeight) * 0.85, tipWeight * 0.85, 0.15, 0);
+      skinWeights.push((1.0 - tipWeight) * 0.90, tipWeight * 0.90, 0.10, 0);
     }
 
     geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
@@ -1156,9 +1347,20 @@ export class CharacterBuilder {
 
     const indexAttr = geo.index;
     const triT = [];
+    const triRowT = [];
     if (indexAttr) {
       for (let i = 0; i < indexAttr.count; i += 3) {
-        const tAvg = (vertT[indexAttr.getX(i)] + vertT[indexAttr.getX(i + 1)] + vertT[indexAttr.getX(i + 2)]) / 3;
+        const i0 = indexAttr.getX(i);
+        const i1 = indexAttr.getX(i + 1);
+        const i2 = indexAttr.getX(i + 2);
+        const y0 = rawNy[i0];
+        const y1 = rawNy[i1];
+        const y2 = rawNy[i2];
+        const rowMidY = (Math.min(y0, y1, y2) + Math.max(y0, y1, y2)) * 0.5;
+        const rowT = (rowMidY + 1.0) * 0.5;
+        triRowT.push(rowT);
+
+        const tAvg = (vertT[i0] + vertT[i1] + vertT[i2]) / 3;
         triT.push(tAvg);
       }
     }
@@ -1168,14 +1370,34 @@ export class CharacterBuilder {
 
     for (let tIdx = 0; tIdx < triT.length; tIdx++) {
       const t = triT[tIdx];
-      let isTipColor = false;
-      if (state.tailTipEnabled) {
-        if (type === 'round') isTipColor = t > 0.55;
-        else if (type === 'long') isTipColor = t > 0.68;
-        else if (type === 'stubby') isTipColor = (t > 0.70) || (t > 0.34 && t < 0.52);
-        else if (type === 'fluffy') isTipColor = t > 0.62;
+      let targetUV = bodyUV;
+
+      if (type === 'round') {
+        if (state.tailTipEnabled && t > 0.55) targetUV = tipUV;
+      } else if (type === 'long') {
+        if (state.tailTipEnabled && t > 0.68) targetUV = tipUV;
+      } else if (type === 'stubby') {
+        if (state.tailTipEnabled && ((t > 0.70) || (t > 0.34 && t < 0.52))) targetUV = tipUV;
+      } else if (type === 'fluffy') {
+        if (state.tailTipEnabled && t > 0.62) targetUV = tipUV;
+      } else if (type === 'hamster') {
+        if (state.tailTipEnabled && t > 0.55) targetUV = tipUV;
+      } else if (type === 'mouse') {
+        if (state.tailTipEnabled && t > 0.72) targetUV = tipUV;
+      } else if (type === 'lion') {
+        if (t > 0.76) {
+          targetUV = state.tailTipEnabled ? tipUV : maneUV;
+        }
+      } else if (type === 'raccoon') {
+        // 너구리 꼬리: 완벽한 수평 링 줄무늬 (사선 분할 지그재그 0%)
+        const rowT = triRowT[tIdx] ?? t;
+        const band = Math.floor(rowT * 7);
+        const isStripe = (band % 2 === 1) || (rowT > 0.88);
+        targetUV = isStripe ? (state.tailTipEnabled ? tipUV : darkUV) : bodyUV;
+      } else if (type === 'mermaid') {
+        if (state.tailTipEnabled && t > 0.68) targetUV = tipUV;
       }
-      const targetUV = isTipColor ? tipUV : bodyUV;
+
       const baseV = tIdx * 3;
       nUv.setXY(baseV, targetUV.u, targetUV.v);
       nUv.setXY(baseV + 1, targetUV.u, targetUV.v);
@@ -1183,6 +1405,233 @@ export class CharacterBuilder {
     }
 
     return [geo];
+  }
+
+  // ==========================================================================
+  // 6-2. 날개 3D 지오메트리 (천사 날개 & 악마 날개)
+  // ==========================================================================
+  createWingsGeometry(state, torsoTopY, chubby, headScale, poly) {
+    const wingType = state.wingType || 'none';
+    if (wingType === 'angel') {
+      return this.createAngelWingsMesh(torsoTopY, chubby, headScale, poly);
+    }
+    if (wingType === 'devil') {
+      return this.createDevilWingsMesh(torsoTopY, chubby, headScale, poly);
+    }
+    return [];
+  }
+
+  // 천사 날개 (첨부 레퍼런스 media_1791110826164 기준 1:1 정밀 벡터화)
+  createAngelWingsMesh(torsoTopY, chubby, headScale, poly) {
+    const whiteUV = getSwatchUV('white');
+    const parts = [];
+
+    const angelPts = [
+      [0.3881, 0.5358], [0.3375, 0.4472], [0.2742, 0.3839], [0.1139, 0.2911],
+      [0.0506, 0.2405], [0.0127, 0.1856], [0.0, 0.135], [0.0042, 0.0928],
+      [0.0211, 0.0506], [0.0548, 0.0127], [0.0844, 0.0], [0.1308, 0.0],
+      [0.1519, 0.0084], [0.1772, 0.0338], [0.1898, 0.0675], [0.1814, 0.1013],
+      [0.1645, 0.1181], [0.1139, 0.1266], [0.0928, 0.1013], [0.097, 0.0802],
+      [0.1266, 0.0717], [0.1477, 0.0844], [0.1519, 0.0717], [0.1266, 0.0506],
+      [0.0928, 0.0591], [0.0717, 0.0928], [0.0844, 0.1266], [0.1055, 0.1434],
+      [0.1392, 0.1477], [0.1645, 0.1392], [0.1983, 0.1055], [0.2067, 0.0759],
+      [0.2278, 0.0633], [0.2784, 0.0675], [0.3164, 0.097], [0.3291, 0.1434],
+      [0.2953, 0.1392], [0.2658, 0.1561], [0.2742, 0.1645], [0.3248, 0.1603],
+      [0.3628, 0.1772], [0.3923, 0.2109], [0.4134, 0.2658], [0.4092, 0.308],
+      [0.3966, 0.3248], [0.3291, 0.2784], [0.3122, 0.2827], [0.3923, 0.3502],
+      [0.4177, 0.405], [0.4177, 0.4725], [0.3923, 0.54],
+    ];
+
+    const shape = new THREE.Shape();
+    shape.moveTo(angelPts[0][0], angelPts[0][1]);
+    for (let i = 1; i < angelPts.length; i++) {
+      shape.lineTo(angelPts[i][0], angelPts[i][1]);
+    }
+    shape.closePath();
+
+    const extrudeSettings = {
+      depth: 0.040 * headScale,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.003 * headScale,
+      bevelThickness: 0.008 * headScale,
+    };
+
+    const wingScale = 1.30 * headScale;
+
+    [-1, 1].forEach((dir) => {
+      const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      geo.translate(0, 0, -extrudeSettings.depth * 0.5);
+
+      if (dir === -1) {
+        geo.scale(-1, 1, 1);
+        reverseGeometryWinding(geo);
+      }
+
+      geo.scale(wingScale, wingScale, wingScale);
+      geo.rotateY(dir * 0.15);
+      geo.rotateZ(dir * -0.10);
+      geo.translate(
+        dir * (0.16 * chubby + 0.12 * headScale),
+        torsoTopY - 0.38 * headScale,
+        -0.38 * chubby - 0.28 * headScale
+      );
+
+      const p = geo.attributes.position;
+      const u = geo.attributes.uv;
+      const sIdx = [];
+      const sW = [];
+      const oScale = [];
+      for (let i = 0; i < p.count; i++) {
+        u.setXY(i, whiteUV.u, whiteUV.v);
+        sIdx.push(BONE_INDEX.UPPER_BODY, 0, 0, 0);
+        sW.push(1.0, 0, 0, 0);
+        oScale.push(1.0);
+      }
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sIdx, 4));
+      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sW, 4));
+      geo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(oScale, 1));
+      parts.push(toSmoothNonIndexed(geo));
+    });
+
+    return parts;
+  }
+
+  // 악마 날개 (첨부 레퍼런스 media_1791110840479 기준 1:1 정밀 벡터화: 검은 뼈대 프레임 + 3단 진홍빛 피막)
+  createDevilWingsMesh(torsoTopY, chubby, headScale, poly) {
+    const darkUV = getSwatchUV('dark');
+    const devilRedUV = getSwatchUV('devilRed');
+    const parts = [];
+
+    const devilSilPts = [
+      [0.1302, 0.4374], [0.1276, 0.414], [0.1328, 0.4088], [0.1354, 0.3671],
+      [0.1406, 0.3541], [0.1406, 0.2942], [0.1328, 0.2604], [0.0859, 0.1406],
+      [0.0547, 0.0885], [0.0026, 0.0182], [0.0, 0.0], [0.0104, 0.0],
+      [0.0729, 0.0391], [0.0833, 0.0547], [0.0885, 0.0469], [0.1406, 0.0651],
+      [0.1901, 0.0677], [0.2265, 0.0625], [0.2447, 0.0547], [0.2525, 0.0599],
+      [0.2578, 0.0495], [0.2838, 0.0443], [0.2812, 0.0599], [0.2864, 0.0599],
+      [0.2994, 0.0989], [0.3411, 0.1432], [0.3801, 0.164], [0.4114, 0.1666],
+      [0.44, 0.1614], [0.4322, 0.1692], [0.4348, 0.1744], [0.4478, 0.1588],
+      [0.4582, 0.1588], [0.4608, 0.1849], [0.4791, 0.2187], [0.5129, 0.2525],
+      [0.5441, 0.2682], [0.5363, 0.2786], [0.5389, 0.2812], [0.5493, 0.2734],
+      [0.5806, 0.276], [0.5806, 0.289], [0.5233, 0.328], [0.4218, 0.3671],
+      [0.3228, 0.3853], [0.2343, 0.3853], [0.2005, 0.3801], [0.1588, 0.4322],
+      [0.1328, 0.44],
+    ];
+
+    const devilBonePts = [
+      [0.1302, 0.4374], [0.1276, 0.414], [0.1328, 0.4088], [0.1354, 0.3671],
+      [0.1406, 0.3541], [0.1406, 0.2942], [0.1328, 0.2604], [0.0859, 0.1406],
+      [0.0547, 0.0885], [0.0026, 0.0182], [0.0, 0.0], [0.0104, 0.0],
+      [0.0781, 0.0443], [0.164, 0.2317], [0.1744, 0.2447], [0.1849, 0.2317],
+      [0.2135, 0.151], [0.2578, 0.0495], [0.2838, 0.0443], [0.2838, 0.0547],
+      [0.2499, 0.1224], [0.1927, 0.2682], [0.1927, 0.276], [0.2161, 0.2994],
+      [0.2369, 0.3124], [0.3463, 0.2473], [0.4218, 0.1875], [0.4478, 0.1588],
+      [0.4608, 0.1614], [0.4634, 0.1822], [0.44, 0.2031], [0.3463, 0.276],
+      [0.2682, 0.3254], [0.2864, 0.3385], [0.3359, 0.3541], [0.3853, 0.3515],
+      [0.4764, 0.3228], [0.5285, 0.2916], [0.5493, 0.2734], [0.5806, 0.276],
+      [0.5806, 0.289], [0.5233, 0.328], [0.4218, 0.3671], [0.3228, 0.3853],
+      [0.2343, 0.3853], [0.2005, 0.3801], [0.1588, 0.4322], [0.1328, 0.44],
+    ];
+
+    const devilHolePts = [
+      [0.1432, 0.427], [0.1614, 0.4192], [0.1692, 0.4114], [0.1849, 0.3905],
+      [0.1875, 0.3801], [0.151, 0.3723], [0.1432, 0.3827], [0.1354, 0.4062],
+      [0.1354, 0.4218], [0.1406, 0.4244],
+    ];
+
+    // 1) 붉은 피막 Shape
+    const membraneShape = new THREE.Shape();
+    membraneShape.moveTo(devilSilPts[0][0], devilSilPts[0][1]);
+    for (let i = 1; i < devilSilPts.length; i++) {
+      membraneShape.lineTo(devilSilPts[i][0], devilSilPts[i][1]);
+    }
+    membraneShape.closePath();
+
+    // 2) 검은 뼈대 골격 Shape (상단 엄지 뿔 홀 포함)
+    const boneShape = new THREE.Shape();
+    boneShape.moveTo(devilBonePts[0][0], devilBonePts[0][1]);
+    for (let i = 1; i < devilBonePts.length; i++) {
+      boneShape.lineTo(devilBonePts[i][0], devilBonePts[i][1]);
+    }
+    boneShape.closePath();
+
+    if (devilHolePts.length > 2) {
+      const holePath = new THREE.Path();
+      holePath.moveTo(devilHolePts[0][0], devilHolePts[0][1]);
+      for (let i = 1; i < devilHolePts.length; i++) {
+        holePath.lineTo(devilHolePts[i][0], devilHolePts[i][1]);
+      }
+      holePath.closePath();
+      boneShape.holes.push(holePath);
+    }
+
+    const membraneSettings = {
+      depth: 0.016 * headScale,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      steps: 1,
+      bevelSize: 0.005 * headScale,
+      bevelThickness: 0.006 * headScale,
+    };
+
+    const boneSettings = {
+      depth: 0.024 * headScale,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      steps: 1,
+      bevelSize: 0.006 * headScale,
+      bevelThickness: 0.007 * headScale,
+    };
+
+    const wingScale = 1.30 * headScale;
+
+    [-1, 1].forEach((dir) => {
+      const processGeo = (geo, uv, outlineScaleVal, zThick) => {
+        geo.translate(0, 0, -zThick * 0.5);
+
+        if (dir === -1) {
+          geo.scale(-1, 1, 1);
+          reverseGeometryWinding(geo);
+        }
+
+        geo.scale(wingScale, wingScale, wingScale);
+        geo.rotateY(dir * 0.15);
+        geo.rotateZ(dir * -0.10);
+        geo.translate(
+          dir * (0.16 * chubby + 0.12 * headScale),
+          torsoTopY - 0.38 * headScale,
+          -0.38 * chubby - 0.28 * headScale
+        );
+
+        const p = geo.attributes.position;
+        const u = geo.attributes.uv;
+        const sIdx = [];
+        const sW = [];
+        const oScale = [];
+        for (let i = 0; i < p.count; i++) {
+          u.setXY(i, uv.u, uv.v);
+          sIdx.push(BONE_INDEX.UPPER_BODY, 0, 0, 0);
+          sW.push(1.0, 0, 0, 0);
+          oScale.push(outlineScaleVal);
+        }
+        geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sIdx, 4));
+        geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sW, 4));
+        geo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(oScale, 1));
+        parts.push(toSmoothNonIndexed(geo));
+      };
+
+      // 1. 붉은 피막 (기저부)
+      const memGeo = new THREE.ExtrudeGeometry(membraneShape, membraneSettings);
+      processGeo(memGeo, devilRedUV, 0.55, membraneSettings.depth);
+
+      // 2. 검은 뼈대 프레임 (피막 앞뒤로 입체 돌출)
+      const boneGeo = new THREE.ExtrudeGeometry(boneShape, boneSettings);
+      processGeo(boneGeo, darkUV, 0.65, boneSettings.depth);
+    });
+
+    return parts;
   }
 
   // ==========================================================================
@@ -1230,6 +1679,12 @@ export class CharacterBuilder {
         list.push(...this.createGlassesMesh(headCenterY, headScale, poly));
       } else if (extra === 'square_glasses') {
         list.push(...this.createSquareGlassesMesh(headCenterY, headScale, poly));
+      } else if (extra === 'halo') {
+        list.push(...this.createHaloMesh(headCenterY, headScale, poly));
+      } else if (extra === 'devil_horns') {
+        list.push(...this.createDevilHornsMesh(headCenterY, headScale, poly));
+      } else if (extra === 'monocle') {
+        list.push(...this.createMonocleMesh(headCenterY, headScale, poly));
       }
     });
 
@@ -1351,7 +1806,7 @@ export class CharacterBuilder {
   }
 
   createCrownMesh(headCenterY, headScale, poly) {
-    const goldUV = getSwatchUV('gold');
+    const crownUV = getSwatchUV('crown');
     const parts = [];
     const baseY = headCenterY + 0.60 * headScale;
     const baseZ = 0.05 * headScale;
@@ -1366,7 +1821,7 @@ export class CharacterBuilder {
       const sW = [];
       const oScale = [];
       for (let i = 0; i < p.count; i++) {
-        u.setXY(i, goldUV.u, goldUV.v);
+        u.setXY(i, crownUV.u, crownUV.v);
         sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
         sW.push(1.0, 0, 0, 0);
         oScale.push(oScaleVal);
@@ -1449,7 +1904,7 @@ export class CharacterBuilder {
   }
 
   createBeretMesh(headCenterY, headScale, poly) {
-    const accUV = getSwatchUV('accessory');
+    const beretUV = getSwatchUV('beret');
     const segW = poly ? poly.accW : 24;
     const segH = poly ? poly.accH : 16;
 
@@ -1460,7 +1915,7 @@ export class CharacterBuilder {
       const sW = [];
       const oScale = [];
       for (let i = 0; i < p.count; i++) {
-        u.setXY(i, accUV.u, accUV.v);
+        u.setXY(i, beretUV.u, beretUV.v);
         sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
         sW.push(1.0, 0, 0, 0);
         oScale.push(oScaleVal);
@@ -1484,7 +1939,7 @@ export class CharacterBuilder {
   }
 
   createStarPinMesh(state, headCenterY, headScale, poly) {
-    const goldUV = getSwatchUV('gold');
+    const starPinUV = getSwatchUV('starPin');
     const darkUV = getSwatchUV('dark');
     const segW = 50;
     const segH = 14;
@@ -1535,7 +1990,7 @@ export class CharacterBuilder {
     };
 
     const parts = [
-      makeStarLayer(0.0, 0.020 * headScale, 0.012 * headScale, goldUV),
+      makeStarLayer(0.0, 0.020 * headScale, 0.012 * headScale, starPinUV),
     ];
 
     const outThick = state && state.outlineEnabled ? (state.outlineThickness ?? 0.032) : 0.0;
@@ -1550,7 +2005,7 @@ export class CharacterBuilder {
 
   // 동그란 안경 (얇고 깔끔한 단일 와이어 프레임)
   createGlassesMesh(headCenterY, headScale, poly) {
-    const darkUV = getSwatchUV('dark');
+    const glassesUV = getSwatchUV('glasses');
     const parts = [];
     const tubularSegs = poly ? poly.glassesTubular : 28;
     const radialSegs = poly ? poly.glassesRadial : 8;
@@ -1562,7 +2017,7 @@ export class CharacterBuilder {
       const sIdx = [];
       const sW = [];
       for (let i = 0; i < p.count; i++) {
-        u.setXY(i, darkUV.u, darkUV.v);
+        u.setXY(i, glassesUV.u, glassesUV.v);
         sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
         sW.push(1.0, 0, 0, 0);
       }
@@ -1595,7 +2050,7 @@ export class CharacterBuilder {
 
   // 사각 안경 (얇고 세련된 단일 와이어 스퀘어 안경테)
   createSquareGlassesMesh(headCenterY, headScale, poly) {
-    const darkUV = getSwatchUV('dark');
+    const squareGlassesUV = getSwatchUV('squareGlasses');
     const parts = [];
     const radialSegs = poly ? poly.glassesRadial : 8;
 
@@ -1606,7 +2061,7 @@ export class CharacterBuilder {
       const sIdx = [];
       const sW = [];
       for (let i = 0; i < p.count; i++) {
-        u.setXY(i, darkUV.u, darkUV.v);
+        u.setXY(i, squareGlassesUV.u, squareGlassesUV.v);
         sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
         sW.push(1.0, 0, 0, 0);
       }
@@ -1649,6 +2104,231 @@ export class CharacterBuilder {
     return parts;
   }
 
+  // 헤일로 (2번 레퍼런스처럼 머리 위 공중에 가로/수평으로 부유하는 황금빛 원환)
+  createHaloMesh(headCenterY, headScale, poly) {
+    const goldUV = getSwatchUV('gold');
+    const tubularSegs = poly ? (poly.isVeryLow ? 24 : 36) : 36;
+    const radialSegs = poly ? (poly.isVeryLow ? 8 : 12) : 12;
+
+    const ringR = 0.33 * headScale;
+    const tubeR = 0.022 * headScale;
+    const geo = new THREE.TorusGeometry(ringR, tubeR, radialSegs, tubularSegs);
+
+    // 2번 사진과 동일하게 가로(수평)로 눕힘 (약 82도 틸트로 정면에서도 타원 원환 홀이 입체적으로 예쁘게 보임)
+    geo.rotateX(Math.PI * 0.46);
+    geo.translate(0, headCenterY + 0.82 * headScale, 0.02 * headScale);
+
+    const p = geo.attributes.position;
+    const u = geo.attributes.uv;
+    const sIdx = [];
+    const sW = [];
+    const oScale = [];
+    for (let i = 0; i < p.count; i++) {
+      u.setXY(i, goldUV.u, goldUV.v);
+      sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
+      sW.push(1.0, 0, 0, 0);
+      oScale.push(0.35);
+    }
+    geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sIdx, 4));
+    geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sW, 4));
+    geo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(oScale, 1));
+    return [toSmoothNonIndexed(geo)];
+  }
+
+  // 악마 뿔 (뒤로 눕지 않고 이마 위에서 시원하게 위·바깥쪽으로 솟아오르는 악마 뿔)
+  createDevilHornsMesh(headCenterY, headScale, poly) {
+    const devilHornsUV = getSwatchUV('devilHorns');
+    const parts = [];
+    const steps = poly ? (poly.isVeryLow ? 7 : 10) : 10;
+    const radSegs = poly ? (poly.isVeryLow ? 8 : 12) : 12;
+
+    [-1, 1].forEach((dir) => {
+      const positions = [];
+      const uvs = [];
+      const sIdx = [];
+      const sW = [];
+      const oScale = [];
+      const indices = [];
+
+      // 이마 윗부분에서 출발 (뒤로 숨지 않고 정면에서 잘 보이도록 Z=0.30)
+      const baseX = dir * 0.32 * headScale;
+      const baseY = headCenterY + 0.40 * headScale;
+      const baseZ = 0.30 * headScale;
+
+      const ringVerts = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+
+        // 중심 경로 (위로 시원하게 솟아오르며 바깥쪽으로 유려하게 곡선 형성, 뒤로는 살짝만)
+        const cx = baseX + dir * (0.04 * t + 0.10 * Math.sin(t * Math.PI * 0.70)) * headScale;
+        const cy = baseY + (0.42 * t) * headScale;
+        const cz = baseZ - (0.04 * t) * headScale;
+
+        if (i === steps) {
+          // 끝 팁 뾰족한 정점
+          const tipIdx = positions.length / 3;
+          positions.push(cx, cy, cz);
+          uvs.push(devilHornsUV.u, devilHornsUV.v);
+          sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
+          sW.push(1.0, 0, 0, 0);
+          oScale.push(0.55);
+          ringVerts.push([tipIdx]);
+          continue;
+        }
+
+        const r = 0.070 * headScale * Math.pow(1.0 - t, 0.75);
+
+        // 접선 방향 근사
+        const nextT = (i + 0.1) / steps;
+        const ncx = baseX + dir * (0.04 * nextT + 0.10 * Math.sin(nextT * Math.PI * 0.70)) * headScale;
+        const ncy = baseY + (0.42 * nextT) * headScale;
+        const ncz = baseZ - (0.04 * nextT) * headScale;
+
+        let tx = ncx - cx, ty = ncy - cy, tz = ncz - cz;
+        const tLen = Math.hypot(tx, ty, tz) || 1;
+        tx /= tLen; ty /= tLen; tz /= tLen;
+
+        let nx = -ty, ny = tx, nz = 0;
+        const nLen = Math.hypot(nx, ny, nz) || 1;
+        nx /= nLen; ny /= nLen; nz /= nLen;
+
+        let bx = ty * nz - tz * ny;
+        let by = tz * nx - tx * nz;
+        let bz = tx * ny - ty * nx;
+        const bLen = Math.hypot(bx, by, bz) || 1;
+        bx /= bLen; by /= bLen; bz /= bLen;
+
+        const curRing = [];
+        for (let j = 0; j < radSegs; j++) {
+          const theta = (j / radSegs) * Math.PI * 2;
+          const cosT = Math.cos(theta);
+          const sinT = Math.sin(theta);
+
+          const px = cx + (nx * cosT + bx * sinT) * r;
+          const py = cy + (ny * cosT + by * sinT) * r;
+          const pz = cz + (nz * cosT + bz * sinT) * r;
+
+          const vIdx = positions.length / 3;
+          positions.push(px, py, pz);
+          uvs.push(devilHornsUV.u, devilHornsUV.v);
+          sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
+          sW.push(1.0, 0, 0, 0);
+          oScale.push(0.55);
+          curRing.push(vIdx);
+        }
+        ringVerts.push(curRing);
+      }
+
+      // 측면 튜브 면 생성
+      for (let i = 0; i < steps - 1; i++) {
+        for (let j = 0; j < radSegs; j++) {
+          const nextJ = (j + 1) % radSegs;
+          const a0 = ringVerts[i][j];
+          const a1 = ringVerts[i][nextJ];
+          const b0 = ringVerts[i + 1][j];
+          const b1 = ringVerts[i + 1][nextJ];
+
+          indices.push(a0, a1, b0);
+          indices.push(a1, b1, b0);
+        }
+      }
+
+      // 끝 팁 연결
+      const lastRing = ringVerts[steps - 1];
+      const tipVertexIdx = ringVerts[steps][0];
+      for (let j = 0; j < radSegs; j++) {
+        const nextJ = (j + 1) % radSegs;
+        indices.push(lastRing[j], lastRing[nextJ], tipVertexIdx);
+      }
+
+      // 밑동 캡 닫기
+      const baseCenterIdx = positions.length / 3;
+      positions.push(baseX, baseY, baseZ);
+      uvs.push(devilHornsUV.u, devilHornsUV.v);
+      sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
+      sW.push(1.0, 0, 0, 0);
+      oScale.push(0.55);
+
+      const firstRing = ringVerts[0];
+      for (let j = 0; j < radSegs; j++) {
+        const nextJ = (j + 1) % radSegs;
+        indices.push(baseCenterIdx, firstRing[nextJ], firstRing[j]);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sIdx, 4));
+      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sW, 4));
+      geo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(oScale, 1));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      geo.userData.keepCustomNormals = true;
+      parts.push(toSmoothNonIndexed(geo));
+    });
+
+    return parts;
+  }
+
+  // 모노클 (오른쪽 눈에 반듯하게 착용되는 외알 안경 + 뺨을 타고 늘어지는 황금 체인)
+  createMonocleMesh(headCenterY, headScale, poly) {
+    const monocleUV = getSwatchUV('monocle');
+    const parts = [];
+    const tubularSegs = poly ? poly.glassesTubular : 32;
+    const radialSegs = poly ? poly.glassesRadial : 8;
+
+    const apply = (geo) => {
+      geo.userData.noOutline = true;
+      const p = geo.attributes.position;
+      const u = geo.attributes.uv;
+      const sIdx = [];
+      const sW = [];
+      for (let i = 0; i < p.count; i++) {
+        u.setXY(i, monocleUV.u, monocleUV.v);
+        sIdx.push(BONE_INDEX.HEAD, 0, 0, 0);
+        sW.push(1.0, 0, 0, 0);
+      }
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(sIdx, 4));
+      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sW, 4));
+      return toSmoothNonIndexed(geo);
+    };
+
+    // 오른쪽 눈 중심 위치에 정확하게 맞춤
+    const eyeX = 0.36 * headScale;
+    const eyeY = headCenterY - 0.18 * headScale;
+    const eyeZ = 0.692 * headScale;
+    const lensR = 0.190 * headScale;
+    const tubeR = 0.010 * headScale;
+
+    // 1. 단일 원형 프레임 림 (두상 곡면에 맞춰 자연스럽게 바깥으로 미세 회전)
+    const frame = new THREE.TorusGeometry(lensR, tubeR, radialSegs, tubularSegs);
+    frame.rotateY(0.12);
+    frame.translate(eyeX, eyeY, eyeZ);
+    parts.push(apply(frame));
+
+    // 2. 바깥쪽 미니 힌지 고리
+    const hingeR = 0.024 * headScale;
+    const hingeTube = 0.007 * headScale;
+    const hinge = new THREE.TorusGeometry(hingeR, hingeTube, 6, 14);
+    hinge.rotateY(0.12);
+    hinge.translate(eyeX + lensR, eyeY, eyeZ - 0.015 * headScale);
+    parts.push(apply(hinge));
+
+    // 3. 뺨을 따라 귀·턱선 쪽으로 우아하게 늘어지는 황금 체인 (스플라인 튜브)
+    const chainPoints = [
+      new THREE.Vector3(eyeX + lensR, eyeY - 0.01 * headScale, eyeZ - 0.015 * headScale),
+      new THREE.Vector3(eyeX + lensR + 0.04 * headScale, eyeY - 0.10 * headScale, eyeZ - 0.06 * headScale),
+      new THREE.Vector3(eyeX + lensR + 0.02 * headScale, eyeY - 0.20 * headScale, eyeZ - 0.18 * headScale),
+      new THREE.Vector3(eyeX + lensR - 0.03 * headScale, eyeY - 0.28 * headScale, eyeZ - 0.32 * headScale),
+    ];
+    const curve = new THREE.CatmullRomCurve3(chainPoints);
+    const chainGeo = new THREE.TubeGeometry(curve, 16, 0.006 * headScale, 6, false);
+    parts.push(apply(chainGeo));
+
+    return parts;
+  }
+
   // ==========================================================================
   // 7-2. 머리카락 더듬이 (바보털) 3D 지오메트리 생성
   // ==========================================================================
@@ -1657,9 +2337,8 @@ export class CharacterBuilder {
     if (ahoges.length === 0) return [];
 
     const parts = [];
-    const ahogeUV = (state.ahogeFollowBody !== false)
-      ? getSwatchUV('body')
-      : getSwatchUV('ahoge');
+    // 스와치 색상에서 '몸 색상과 일치' 여부를 처리하므로 항상 더듬이 전용 스와치 사용 (색상 변경 즉시 반영)
+    const ahogeUV = getSwatchUV('ahoge');
 
     // 머리 돔 타원 반지름
     const rx = 0.88 * headScale;
@@ -1890,6 +2569,222 @@ export class CharacterBuilder {
         );
       }
     });
+
+    return parts;
+  }
+
+  // ==========================================================================
+  // 7-3. 돌출형 3D 새 부리 (입 모양 '새 부리' 선택 시)
+  // ==========================================================================
+  createBeakGeometry(state, headCenterY, headScale, poly) {
+    const beakUV = getSwatchUV('beak');
+    const darkUV = getSwatchUV('dark');
+    const radSegs = poly ? (poly.isVeryLow ? 12 : 20) : 20;
+    const steps = poly ? (poly.isVeryLow ? 6 : 8) : 8;
+
+    const size = Math.max(0.4, state.beakSize ?? 1.0);
+    const yOffset = (state.beakY ?? 0.0) * 0.08 * headScale;
+
+    // 부리 위치: 실제 볼/입 레벨
+    const rootX = 0;
+    const rootY = headCenterY - 0.30 * headScale + yOffset;
+
+    const rxHead = 0.88 * headScale;
+    const ryHead = 0.64 * headScale;
+    const rzHead = 0.68 * headScale;
+
+    // 해당 높이에서의 실제 얼굴 앞면 Z를 계산하는 헬퍼 함수 (두상 타원체 곡률 정밀 매핑)
+    const getHeadSurfZ = (y, x = 0) => {
+      const dyRel = y - headCenterY;
+      let squircleR;
+      if (dyRel >= 0) {
+        const nyN = Math.min(0.999, Math.pow(Math.max(0, dyRel / ryHead), 1 / 0.94));
+        squircleR = Math.pow(Math.max(0, 1 - Math.pow(nyN, 2.1)), 0.47);
+      } else {
+        const expo = poly && poly.isVeryLow ? 0.68 : 0.54;
+        const ay = Math.min(0.999, Math.pow(Math.max(0, -dyRel / (ryHead * 0.70)), 1 / expo));
+        squircleR = Math.pow(Math.max(0, 1 - Math.pow(ay, 2.8)), 0.36);
+      }
+      const baseZ = rzHead * squircleR;
+      if (Math.abs(x) > 0.001) {
+        const xFactor = Math.min(0.99, Math.abs(x) / (rxHead * Math.max(0.2, squircleR)));
+        return baseZ * Math.sqrt(Math.max(0.01, 1 - xFactor * xFactor));
+      }
+      return baseZ;
+    };
+
+    const surfZCenter = getHeadSurfZ(rootY, 0);
+
+    const tipX = 0;
+    const tipY = rootY - 0.022 * headScale * size;
+    const tipZ = surfZCenter + 0.15 * headScale * size;
+
+    const baseW = 0.225 * headScale * size;
+    const baseHTop = 0.066 * headScale * size;
+    const baseHBot = 0.046 * headScale * size;
+
+    const positions = [];
+    const uvs = [];
+    const skinIndices = [];
+    const skinWeights = [];
+    const outlineScales = [];
+    const indices = [];
+
+    const ringVertIndices = [];
+
+    // 1) 노란색 본체 3D 부리 메시
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+
+      if (i === steps) {
+        const tipIdx = positions.length / 3;
+        positions.push(tipX, tipY, tipZ);
+        uvs.push(beakUV.u, beakUV.v);
+        skinIndices.push(BONE_INDEX.HEAD, 0, 0, 0);
+        skinWeights.push(1.0, 0, 0, 0);
+        outlineScales.push(0.85);
+        ringVertIndices.push([tipIdx]);
+        continue;
+      }
+
+      const taper = Math.pow(1.0 - Math.pow(t, 2.0), 0.55);
+      const w = baseW * taper;
+      const hTop = baseHTop * taper;
+      const hBot = baseHBot * Math.pow(1.0 - Math.pow(t, 2.0), 0.60);
+
+      const curY = rootY + Math.pow(t, 1.35) * (tipY - rootY);
+
+      // 루트 링(i = 0)은 인버티드 헐 외곽선이 얼굴 위로 들뜨지 않도록 0.0, 돌출 팁(i > 0)은 0.85
+      const outScaleVal = i === 0 ? 0.0 : 0.85;
+
+      const currentRing = [];
+      for (let j = 0; j < radSegs; j++) {
+        const theta = (j / radSegs) * Math.PI * 2;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+
+        const vx = rootX + cosT * (w * 0.5);
+        const vy = curY + (sinT >= 0 ? sinT * hTop : sinT * hBot);
+
+        const baseZ_j = getHeadSurfZ(vy, vx) + 0.002 * headScale * size;
+        const vz = baseZ_j + (1.0 - Math.pow(1.0 - t, 1.25)) * (tipZ - baseZ_j);
+
+        const vIdx = positions.length / 3;
+        positions.push(vx, vy, vz);
+        uvs.push(beakUV.u, beakUV.v);
+        skinIndices.push(BONE_INDEX.HEAD, 0, 0, 0);
+        skinWeights.push(1.0, 0, 0, 0);
+        outlineScales.push(outScaleVal);
+        currentRing.push(vIdx);
+      }
+      ringVertIndices.push(currentRing);
+    }
+
+    for (let i = 0; i < steps - 1; i++) {
+      const ringA = ringVertIndices[i];
+      const ringB = ringVertIndices[i + 1];
+      for (let j = 0; j < radSegs; j++) {
+        const nextJ = (j + 1) % radSegs;
+        indices.push(ringA[j], ringA[nextJ], ringB[j]);
+        indices.push(ringA[nextJ], ringB[nextJ], ringB[j]);
+      }
+    }
+
+    const lastRing = ringVertIndices[steps - 1];
+    const tipVertexIdx = ringVertIndices[steps][0];
+    for (let j = 0; j < radSegs; j++) {
+      const nextJ = (j + 1) % radSegs;
+      indices.push(lastRing[j], lastRing[nextJ], tipVertexIdx);
+    }
+
+    // 바닥 캡 (얼굴 접합면 닫음)
+    const baseCenterIdx = positions.length / 3;
+    const baseCenterZ = surfZCenter - 0.002 * headScale * size;
+    positions.push(rootX, rootY, baseCenterZ);
+    uvs.push(beakUV.u, beakUV.v);
+    skinIndices.push(BONE_INDEX.HEAD, 0, 0, 0);
+    skinWeights.push(1.0, 0, 0, 0);
+    outlineScales.push(0.0);
+
+    const firstRing = ringVertIndices[0];
+    for (let j = 0; j < radSegs; j++) {
+      const nextJ = (j + 1) % radSegs;
+      indices.push(baseCenterIdx, firstRing[nextJ], firstRing[j]);
+    }
+
+    const beakGeo = new THREE.BufferGeometry();
+    beakGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    beakGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    beakGeo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
+    beakGeo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
+    beakGeo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(outlineScales, 1));
+    beakGeo.setIndex(indices);
+    beakGeo.computeVertexNormals();
+
+    const parts = [toSmoothNonIndexed(beakGeo)];
+
+    // 2) 안면 접합부 둘레 전용 툰 외곽선 칼라 (상단까지 잘림 없이 부리 전체를 온전히 닫아주는 외곽선)
+    const outThick = state && state.outlineEnabled ? (state.outlineThickness ?? 0.032) : 0.0;
+    if (outThick > 0.001) {
+      const collarPositions = [];
+      const collarUvs = [];
+      const collarSkinIndices = [];
+      const collarSkinWeights = [];
+      const collarOutlineScales = [];
+      const collarIndices = [];
+
+      const wOut = baseW + outThick * 1.5;
+      const hTopOut = baseHTop + outThick * 1.25;
+      const hBotOut = baseHBot + outThick * 1.25;
+
+      for (let j = 0; j < radSegs; j++) {
+        const theta = (j / radSegs) * Math.PI * 2;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+
+        // 안쪽 링: 노란 부리 뿌리 위치
+        const inX = rootX + cosT * (baseW * 0.5);
+        const inY = rootY + (sinT >= 0 ? sinT * baseHTop : sinT * baseHBot);
+        const inZ = getHeadSurfZ(inY, inX) + 0.0025 * headScale * size;
+
+        // 바깥쪽 링: 얼굴 표면을 따라 outThick만큼 확장된 테두리
+        const outX = rootX + cosT * (wOut * 0.5);
+        const outY = rootY + (sinT >= 0 ? sinT * hTopOut : sinT * hBotOut);
+        const outZ = getHeadSurfZ(outY, outX) + 0.0012 * headScale * size;
+
+        const idxIn = j * 2;
+        const idxOut = j * 2 + 1;
+
+        collarPositions.push(inX, inY, inZ);
+        collarPositions.push(outX, outY, outZ);
+
+        collarUvs.push(darkUV.u, darkUV.v);
+        collarUvs.push(darkUV.u, darkUV.v);
+
+        collarSkinIndices.push(BONE_INDEX.HEAD, 0, 0, 0, BONE_INDEX.HEAD, 0, 0, 0);
+        collarSkinWeights.push(1.0, 0, 0, 0, 1.0, 0, 0, 0);
+        collarOutlineScales.push(0.0, 0.0);
+
+        const nextJ = (j + 1) % radSegs;
+        const nextIn = nextJ * 2;
+        const nextOut = nextJ * 2 + 1;
+
+        collarIndices.push(idxIn, idxOut, nextIn);
+        collarIndices.push(nextIn, idxOut, nextOut);
+      }
+
+      const collarGeo = new THREE.BufferGeometry();
+      collarGeo.setAttribute('position', new THREE.Float32BufferAttribute(collarPositions, 3));
+      collarGeo.setAttribute('uv', new THREE.Float32BufferAttribute(collarUvs, 2));
+      collarGeo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(collarSkinIndices, 4));
+      collarGeo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(collarSkinWeights, 4));
+      collarGeo.setAttribute('outlineScale', new THREE.Float32BufferAttribute(collarOutlineScales, 1));
+      collarGeo.setIndex(collarIndices);
+      collarGeo.computeVertexNormals();
+      collarGeo.userData.noOutline = true;
+
+      parts.unshift(collarGeo);
+    }
 
     return parts;
   }
