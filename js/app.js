@@ -17,10 +17,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=75';
-import { TextureGenerator } from './textureGenerator.js?v=75';
-import { CharacterBuilder } from './characterBuilder.js?v=75';
-import { CharacterAnimator } from './animator.js?v=75';
+} from './config.js?v=76';
+import { TextureGenerator } from './textureGenerator.js?v=76';
+import { CharacterBuilder } from './characterBuilder.js?v=76';
+import { CharacterAnimator } from './animator.js?v=76';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -29,7 +29,8 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=75';
+  isIOSDevice,
+} from './exporter.js?v=76';
 import {
   initI18n,
   setLanguage,
@@ -37,7 +38,7 @@ import {
   t,
   getPartName,
   onLanguageChange,
-} from './i18n.js?v=75';
+} from './i18n.js?v=76';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {
@@ -2015,6 +2016,10 @@ function initUI() {
 
   // 헤더 파일 불러오기 / 프로젝트 저장(.json) / 스튜디오 모드 토글
   const inputCharFile = document.getElementById('inputCharacterFile');
+  if (inputCharFile && isIOSDevice()) {
+    // iOS Safari 파일 선택창에서 비표준 확장자(.glb, .json 등)가 회색으로 비활성화되는 현상 방지
+    inputCharFile.removeAttribute('accept');
+  }
   document.getElementById('btnImportCharacter')?.addEventListener('click', () => {
     if (inputCharFile) {
       inputCharFile.value = '';
@@ -2025,8 +2030,12 @@ function initUI() {
     handleCharacterFilesImport(e.target.files, false);
   });
 
-  document.getElementById('btnExportJson')?.addEventListener('click', () => {
-    exportCharacterJson(state, `${getExportFilePrefix()}_project.json`);
+  document.getElementById('btnExportJson')?.addEventListener('click', async () => {
+    try {
+      await exportCharacterJson(state, `${getExportFilePrefix()}_project.json`);
+    } catch (err) {
+      console.error('프로젝트 저장 실패:', err);
+    }
   });
 
   document.getElementById('btnUndo')?.addEventListener('click', undo);
@@ -2110,17 +2119,17 @@ function initUI() {
     }
   });
 
-  document.getElementById('btnExportGlb').addEventListener('click', () => {
+  document.getElementById('btnExportGlb').addEventListener('click', async () => {
     if (!currentCharacter) return;
     showBusy('GLB 3D 모델 파일 생성 중…');
     animator.resetPose();
     try {
-      exportGlbFile(currentCharacter.rootGroup, `${getExportFilePrefix()}.glb`, state);
+      await exportGlbFile(currentCharacter.rootGroup, `${getExportFilePrefix()}.glb`, state);
     } catch (err) {
       console.error('GLB 내보내기 실패:', err);
       alert('GLB 모델 내보내기 중 오류가 발생했습니다: ' + (err.message || ''));
     } finally {
-      setTimeout(hideBusy, 400);
+      hideBusy();
     }
   });
 

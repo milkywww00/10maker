@@ -501,37 +501,44 @@ export async function exportMmdZip(skinnedMesh, boneWorldPositions, textureCanva
   }
 
   const zipBlob = createZipArchive(entries);
-  triggerDownload(zipBlob, filename);
+  await triggerDownload(zipBlob, filename);
 }
 
 // 범용 3D 모델 (.glb) 다운로드 (10공방 재불러오기용 state 메타데이터 내장)
 export function exportGlbFile(rootGroup, filename = 'custom_animal_character.glb', state = null) {
-  if (state) {
-    if (state.characterName && state.characterName.trim()) {
-      rootGroup.name = state.characterName.trim();
+  return new Promise((resolve, reject) => {
+    if (state) {
+      if (state.characterName && state.characterName.trim()) {
+        rootGroup.name = state.characterName.trim();
+      }
+      rootGroup.userData = {
+        ...rootGroup.userData,
+        studio10State: structuredClone(state),
+      };
     }
-    rootGroup.userData = {
-      ...rootGroup.userData,
-      studio10State: structuredClone(state),
-    };
-  }
-  const exporter = new GLTFExporter();
-  exporter.parse(
-    rootGroup,
-    (result) => {
-      const blob = new Blob([result], { type: 'model/gltf-binary' });
-      triggerDownload(blob, filename);
-    },
-    (err) => {
-      console.error('GLB 내보내기 오류:', err);
-      alert('GLB 파일 생성 중 오류가 발생했습니다.');
-    },
-    { binary: true }
-  );
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      rootGroup,
+      async (result) => {
+        try {
+          const blob = new Blob([result], { type: 'model/gltf-binary' });
+          await triggerDownload(blob, filename);
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      },
+      (err) => {
+        console.error('GLB 내보내기 오류:', err);
+        reject(err);
+      },
+      { binary: true }
+    );
+  });
 }
 
 // 캐릭터 커스텀 프로젝트 파일 (.json) 저장
-export function exportCharacterJson(state, filename = '10studio_character.json') {
+export async function exportCharacterJson(state, filename = '10studio_character.json') {
   const payload = {
     version: 1,
     app: '10공방',
@@ -539,7 +546,32 @@ export function exportCharacterJson(state, filename = '10studio_character.json')
     state: structuredClone(state),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  triggerDownload(blob, filename);
+  await triggerDownload(blob, filename);
+}
+
+// 파일 읽기 헬퍼 (구형 iOS Safari / WebKit 호환)
+async function readFileAsText(file) {
+  if (typeof file.text === 'function') {
+    return await file.text();
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('파일을 읽지 못했습니다.'));
+    reader.readAsText(file);
+  });
+}
+
+async function readFileAsArrayBuffer(file) {
+  if (typeof file.arrayBuffer === 'function') {
+    return await file.arrayBuffer();
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('파일을 읽지 못했습니다.'));
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 // ZIP 아카이브(비압축 Store 방식)에서 character.json 추출
@@ -573,21 +605,58 @@ function extractCharacterJsonFromZipBuffer(arrayBuffer) {
 
 // 10공방에서 제작한 파일(.json, .glb, .zip)을 불러와 캐릭터 상태 또는 3D 메쉬로 복원
 export async function importCharacterFile(file) {
-  const ext = file.name.toLowerCase().split('.').pop();
-  const baseName = file.name.replace(/\.[^.]+$/, '');
+  const fileName = file.name || '';
+  let ext = fileName.toLowerCase().split('.').pop() || '';
+  const baseName = fileName.replace(/\.[^.]+$/, '') || 'character';
 
-  if (ext === 'json') {
-    const text = await file.text();
-    const parsed = JSON.parse(text);
-    const loadedState = parsed && parsed.state ? parsed.state : parsed;
-    if (!loadedState || typeof loadedState !== 'object' || !loadedState.earType) {
-      throw new Error('유효한 10공방 캐릭터 JSON 파일이 아닙니다.');
-    }
-    return { type: 'state', state: loadedState, name: baseName };
+  // 확장자가 불분명할 경우 MIME 타입으로 1차 추론
+  if (!ext || ext === fileName.toLowerCase()) {
+    if (file.type === 'application/json' || file.type === 'text/plain') ext = 'json';
+    else if (file.type.includes('zip')) ext = 'zip';
+    else if (file.type.includes('gltf') || file.type.includes('glb')) ext = 'glb';
   }
 
-  if (ext === 'zip') {
-    const buf = await file.arrayBuffer();
+  // 매직 넘버를 통한 파일 포맷 검사 (iOS에서 확장자가 생략되거나 잘못 지정된 경우 대응)
+  let magicFormat = null;
+  try {
+    const headerSlice = await readFileAsArrayBuffer(file.slice(0, 16));
+    const v = new DataView(headerSlice);
+    if (v.byteLength >= 4) {
+      const u32Big = v.getUint32(0, false);
+      const u32Little = v.getUint32(0, true);
+      if (u32Big === 0x676C5446) { // 'glTF'
+        magicFormat = 'glb';
+      } else if (u32Little === 0x04034b50) { // 'PK\x03\x04'
+        magicFormat = 'zip';
+      }
+    }
+  } catch (_) {}
+
+  const effectiveExt = magicFormat || ext;
+
+  if (effectiveExt === 'json' || effectiveExt === 'txt') {
+    let parsed = null;
+    try {
+      const text = await readFileAsText(file);
+      parsed = JSON.parse(text);
+    } catch (parseErr) {
+      if (effectiveExt === 'json') {
+        throw new Error('유효한 JSON 파일 형식이 아닙니다: ' + (parseErr.message || ''));
+      }
+    }
+    if (parsed) {
+      const loadedState = parsed && parsed.state ? parsed.state : parsed;
+      if (loadedState && typeof loadedState === 'object' && loadedState.earType) {
+        return { type: 'state', state: loadedState, name: baseName };
+      }
+      if (effectiveExt === 'json') {
+        throw new Error('유효한 10공방 캐릭터 JSON 파일이 아닙니다.');
+      }
+    }
+  }
+
+  if (effectiveExt === 'zip') {
+    const buf = await readFileAsArrayBuffer(file);
     const parsed = extractCharacterJsonFromZipBuffer(buf);
     if (!parsed) {
       throw new Error('ZIP 파일 내부에 character.json 데이터가 없습니다. 최신 10공방에서 저장한 ZIP/JSON/GLB 파일을 사용해주세요.');
@@ -596,8 +665,8 @@ export async function importCharacterFile(file) {
     return { type: 'state', state: loadedState, name: baseName };
   }
 
-  if (ext === 'glb' || ext === 'gltf') {
-    const buf = await file.arrayBuffer();
+  if (effectiveExt === 'glb' || effectiveExt === 'gltf') {
+    const buf = await readFileAsArrayBuffer(file);
     const loader = new GLTFLoader();
     const gltf = await new Promise((resolve, reject) => {
       loader.parse(buf, '', resolve, reject);
@@ -1021,15 +1090,122 @@ export function encodeGif89a(framesRgba, width, height, delayCs = 5, isTranspare
   return new Blob(chunks, { type: 'image/gif' });
 }
 
-export function triggerDownload(blob, filename) {
-  const url = URL.createObjectURL(blob);
+export function isIOSDevice() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return /iP(hone|ad|od)/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function anchorDownload(blob, filename) {
+  const downloadBlob = (isIOSDevice() && blob.type !== 'application/octet-stream')
+    ? new Blob([blob], { type: 'application/octet-stream' })
+    : blob;
+  const url = URL.createObjectURL(downloadBlob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+}
+
+async function tryShareFile(blob, filename) {
+  if (typeof navigator.share !== 'function') return 'unsupported';
+  const types = [blob.type, 'application/octet-stream'].filter(Boolean);
+  for (const type of types) {
+    try {
+      const file = new File([blob], filename, { type });
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) continue;
+      await navigator.share({ files: [file], title: filename });
+      return 'shared';
+    } catch (err) {
+      if (err && err.name === 'AbortError') return 'shared';
+      // NotAllowedError 등: 사용자 제스처 만료 → 저장 버튼 다이얼로그로 폴백
+      return 'failed';
+    }
+  }
+  return 'unsupported';
+}
+
+// iOS Safari: 긴 내보내기 처리 후에는 제스처가 만료돼 자동 다운로드가 막히므로, 사용자가 직접 누르는 저장 창을 띄움
+function showIOSSaveDialog(blob, filename) {
+  return new Promise((resolve) => {
+    const oldDialog = document.getElementById('iosSaveDialogOverlay');
+    if (oldDialog) oldDialog.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'iosSaveDialogOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#ffffff;border-radius:18px;padding:22px 20px 18px;max-width:340px;width:100%;text-align:center;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 20px 35px rgba(0,0,0,0.2);';
+
+    const title = document.createElement('p');
+    title.textContent = '📦 모델 파일 저장';
+    title.style.cssText = 'margin:0 0 6px;font-weight:800;font-size:1.02rem;color:#18181b;';
+
+    const desc = document.createElement('p');
+    desc.textContent = '아이폰에서는 [공유 / 파일에 저장]을 눌러 [파일에 저장]을 선택하시면 저장됩니다.';
+    desc.style.cssText = 'margin:0 0 12px;font-size:0.82rem;color:#52525b;line-height:1.4;';
+
+    const nameEl = document.createElement('div');
+    nameEl.textContent = filename;
+    nameEl.style.cssText = 'margin:0 0 16px;padding:8px 10px;background:#f4f4f5;border-radius:8px;font-size:0.75rem;color:#71717a;word-break:break-all;font-weight:600;';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.textContent = '공유 / 파일에 저장';
+    saveBtn.style.cssText = 'width:100%;height:46px;border:0;border-radius:12px;background:#18181b;color:#ffffff;font-weight:700;font-size:0.95rem;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+
+    const directBtn = document.createElement('button');
+    directBtn.type = 'button';
+    directBtn.textContent = '브라우저 직접 다운로드';
+    directBtn.style.cssText = 'width:100%;height:40px;border:1.5px solid #e4e4e7;border-radius:12px;background:#ffffff;color:#18181b;font-weight:700;font-size:0.88rem;margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = '닫기';
+    closeBtn.style.cssText = 'width:100%;height:34px;border:0;background:transparent;color:#71717a;font-weight:600;font-size:0.84rem;cursor:pointer;';
+
+    const close = () => {
+      overlay.remove();
+      resolve();
+    };
+
+    saveBtn.addEventListener('click', async () => {
+      const r = await tryShareFile(blob, filename);
+      if (r === 'shared') {
+        close();
+      } else {
+        anchorDownload(blob, filename);
+      }
+    });
+
+    directBtn.addEventListener('click', () => {
+      anchorDownload(blob, filename);
+    });
+
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+
+    card.append(title, desc, nameEl, saveBtn, directBtn, closeBtn);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  });
+}
+
+export async function triggerDownload(blob, filename) {
+  if (isIOSDevice()) {
+    const r = await tryShareFile(blob, filename);
+    if (r === 'shared') return;
+    showIOSSaveDialog(blob, filename);
+    return;
+  }
+  anchorDownload(blob, filename);
 }
 
 export async function shareFile(blob, filename) {

@@ -53,7 +53,7 @@
         </svg>
       </div>
       <span class="hdr-divider" aria-hidden="true"></span>
-      <input type="file" id="inputCharacterFile" accept=".json,.zip,.glb" hidden />
+      <input type="file" id="inputCharacterFile" accept=".json,.zip,.glb,application/json,application/zip,application/x-zip-compressed,model/gltf-binary,application/octet-stream,*/*" style="position:fixed;top:-1000px;left:-1000px;opacity:0;pointer-events:none;width:1px;height:1px;" aria-hidden="true" tabindex="-1" />
       <button type="button" id="btnImportCharacter" class="ctrl-btn" data-i18n-title="btn_import_title" title="사이트에서 저장한 캐릭터 파일(.json, .zip, .glb) 불러오기">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -834,6 +834,6 @@
     </main>
   </div>
 
-  <script type="module" src="js/app.js?v=75"></script>
+  <script type="module" src="js/app.js?v=76"></script>
 </body>
 </html>
