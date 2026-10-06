@@ -17,10 +17,10 @@ import {
   EXTRA_ACC_TYPES,
   DANCE_MODES,
   COLOR_PALETTES,
-} from './config.js?v=74';
-import { TextureGenerator } from './textureGenerator.js?v=74';
-import { CharacterBuilder } from './characterBuilder.js?v=74';
-import { CharacterAnimator } from './animator.js?v=74';
+} from './config.js?v=75';
+import { TextureGenerator } from './textureGenerator.js?v=75';
+import { CharacterBuilder } from './characterBuilder.js?v=75';
+import { CharacterAnimator } from './animator.js?v=75';
 import {
   exportMmdZip,
   exportGlbFile,
@@ -29,7 +29,7 @@ import {
   encodeGif89a,
   triggerDownload,
   shareFile,
-} from './exporter.js?v=74';
+} from './exporter.js?v=75';
 import {
   initI18n,
   setLanguage,
@@ -37,7 +37,7 @@ import {
   t,
   getPartName,
   onLanguageChange,
-} from './i18n.js?v=74';
+} from './i18n.js?v=75';
 
 // 불러온 캐릭터 상태 객체 정규화 및 기본값 보완
 function sanitizeCharacterState(raw) {

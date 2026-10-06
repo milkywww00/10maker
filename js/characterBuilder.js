@@ -387,7 +387,7 @@ export class CharacterBuilder {
     const nPos = geo.attributes.position;
     const nUv = geo.attributes.uv;
     const bodyUV = getSwatchUV('body');
-    const earOuterUV = getSwatchUV('earOuter');
+    const crownToneUV = getSwatchUV('crownTone');
     const isTwoTone = (Array.isArray(state.patterns) && state.patterns.includes('two_tone')) || state.patternType === 'two_tone';
 
     for (let i = 0; i < nPos.count; i += 3) {
@@ -412,7 +412,7 @@ export class CharacterBuilder {
         }
       } else if (isUpperCrownTwoTone) {
         for (let k = 0; k < 3; k++) {
-          nUv.setXY(i + k, earOuterUV.u, earOuterUV.v);
+          nUv.setXY(i + k, crownToneUV.u, crownToneUV.v);
         }
       } else {
         for (let k = 0; k < 3; k++) {

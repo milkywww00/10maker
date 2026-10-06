@@ -30,6 +30,7 @@ export const SWATCH_MAP = {
   crown:         { index: 20, x: 400, y: 740, w: 20, h: 284 },
   devilHorns:    { index: 21, x: 420, y: 740, w: 20, h: 284 },
   monocle:       { index: 22, x: 440, y: 740, w: 20, h: 284 },
+  crownTone:     { index: 23, x: 460, y: 740, w: 10, h: 284 },
 };
 
 // 하단 중앙: 몸통 배 무늬(Belly Patch) 전용 정면 직교 투영 패치 영역
@@ -1564,6 +1565,7 @@ export class TextureGenerator {
       crown: state.crownColor || '#ffd166',
       devilHorns: state.devilHornsColor || '#18181b',
       monocle: state.monocleColor || '#ffd166',
+      crownTone: state.patternColor || '#d4c4b4',
     };
 
     Object.entries(SWATCH_MAP).forEach(([key, rect]) => {
